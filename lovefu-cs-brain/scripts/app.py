@@ -12,7 +12,7 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .intent_classifier import classify_intent, check_escalation_keywords
 from .prompt_assembler import assemble_prompt
