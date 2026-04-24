@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大島樂眠 AI 輔睡員 · 系統架構總覽</title>
+<style>
+  :root{
+    --green-deep:#616853;
+    --green-light:#90A086;
+    --gold:#D1B895;
+    --brown:#5B4345;
+    --cream:#F5F0E6;
+    --bg:#FBFAF5;
+    --ink:#2B2B2B;
+    --line:#D8D2C4;
+    --ok:#5E8A65;
+    --warn:#C9965C;
+    --danger:#B7524F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+    padding:40px 20px;
+  }
+  .wrap{max-width:1240px;margin:0 auto}
+  header{
+    text-align:center;
+    padding:32px 24px;
+    background:linear-gradient(135deg,var(--green-deep),var(--green-light));
+    color:#fff;
+    border-radius:16px;
+    margin-bottom:40px;
+    box-shadow:0 8px 32px rgba(97,104,83,.18);
+  }
+  header h1{font-size:28px;letter-spacing:2px;margin-bottom:8px;font-weight:700}
+  header .sub{opacity:.92;font-size:15px;letter-spacing:1px}
+  header .badge{
+    display:inline-block;margin-top:14px;padding:6px 14px;
+    background:rgba(255,255,255,.2);border-radius:20px;font-size:13px;letter-spacing:1px;
+  }
+
+  section{
+    background:#fff;
+    border-radius:14px;
+    padding:28px 32px;
+    margin-bottom:28px;
+    box-shadow:0 2px 14px rgba(91,67,69,.06);
+    border:1px solid var(--line);
+  }
+  h2{
+    color:var(--green-deep);
+    font-size:22px;
+    margin-bottom:20px;
+    padding-bottom:12px;
+    border-bottom:2px solid var(--gold);
+    display:flex;align-items:center;gap:10px;
+  }
+  h2::before{
+    content:"";
+    width:6px;height:22px;background:var(--green-deep);border-radius:3px;
+  }
+  h3{color:var(--brown);font-size:17px;margin:18px 0 10px}
+
+  /* ── 節點樣式 ── */
+  .diagram{
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    padding:20px 0;
+  }
+  .row{
+    display:flex;justify-content:center;gap:14px;flex-wrap:wrap;width:100%;
+  }
+  .node{
+    padding:14px 18px;
+    border-radius:10px;
+    text-align:center;
+    min-width:140px;
+    font-size:14px;
+    font-weight:600;
+    border:2px solid transparent;
+    position:relative;
+  }
+  .node .desc{font-size:11px;font-weight:400;opacity:.85;margin-top:4px;letter-spacing:.5px}
+  .node.customer{background:var(--cream);border-color:var(--brown);color:var(--brown)}
+  .node.channel{background:#FFF4E3;border-color:var(--gold);color:var(--brown)}
+  .node.core{background:var(--green-deep);color:#fff;border-color:var(--green-deep);min-width:220px}
+  .node.skill{background:#fff;border-color:var(--green-light);color:var(--green-deep);min-width:160px}
+  .node.skill-guard{background:#FFE9E9;border-color:var(--danger);color:var(--danger);min-width:160px}
+  .node.skill-data{background:#E8F1E8;border-color:var(--ok);color:var(--ok);min-width:160px}
+  .node.external{background:#F0EDE4;border-color:var(--brown);color:var(--brown)}
+  .node.storage{background:var(--gold);color:#fff;border-color:var(--gold)}
+
+  .arrow{
+    width:2px;height:24px;background:var(--green-deep);
+    position:relative;
+  }
+  .arrow::after{
+    content:"";position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);
+    border:6px solid transparent;border-top-color:var(--green-deep);
+  }
+  .arrow.double::before{
+    content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+    border:6px solid transparent;border-bottom-color:var(--green-deep);
+  }
+  .arrow.small{height:14px}
+  .h-line{
+    height:2px;background:var(--green-light);
+    margin:0 8px;flex:1;max-width:60px;align-self:center;
+  }
+
+  /* ── 方格布局 ── */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:14px;margin:16px 0;
+  }
+  .card{
+    background:#FBFAF5;border:1px solid var(--line);border-radius:10px;padding:16px;
+  }
+  .card h4{color:var(--green-deep);font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .card h4 .dot{width:10px;height:10px;border-radius:50%;background:var(--green-light)}
+  .card.guard h4 .dot{background:var(--danger)}
+  .card.data h4 .dot{background:var(--ok)}
+  .card.core h4 .dot{background:var(--gold)}
+  .card ul{list-style:none;font-size:13px;color:#555}
+  .card li{padding:3px 0;padding-left:14px;position:relative}
+  .card li::before{content:"›";position:absolute;left:0;color:var(--green-light);font-weight:700}
+
+  /* 流程條 */
+  .flow-chain{
+    display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;
+    padding:18px 10px;background:var(--cream);border-radius:10px;margin:10px 0;
+  }
+  .flow-step{
+    background:#fff;padding:10px 14px;border-radius:20px;
+    border:2px solid var(--green-light);font-size:13px;font-weight:600;
+    color:var(--green-deep);min-width:90px;text-align:center;
+  }
+  .flow-step.core{background:var(--green-deep);color:#fff;border-color:var(--green-deep)}
+  .flow-arrow{color:var(--green-deep);font-weight:700;font-size:18px}
+
+  /* 表格 */
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:var(--cream);color:var(--brown);font-weight:600;letter-spacing:.5px}
+  tr:hover{background:#FBFAF5}
+  .status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
+  .status.ok{background:#E8F1E8;color:var(--ok)}
+  .status.pending{background:#FFF4E3;color:var(--warn)}
+  .status.danger{background:#FFE9E9;color:var(--danger)}
+
+  /* Red line 區塊 */
+  .principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .principle{
+    background:linear-gradient(135deg,#FFF5F5,#FFFAFA);
+    border-left:4px solid var(--danger);
+    padding:14px 16px;border-radius:6px;
+  }
+  .principle h4{color:var(--danger);font-size:14px;margin-bottom:6px}
+  .principle p{font-size:13px;color:#666}
+
+  /* 紀律章節 */
+  .highlight{
+    background:linear-gradient(135deg,var(--cream),#fff);
+    border-left:5px solid var(--gold);
+    padding:16px 20px;border-radius:6px;margin:12px 0;
+    font-size:14px;
+  }
+  .highlight strong{color:var(--brown)}
+
+  footer{
+    text-align:center;padding:24px;color:#888;font-size:12px;letter-spacing:1px;
+  }
+
+  /* 安全閘門流程 */
+  .guard-flow{
+    display:flex;flex-direction:column;gap:8px;max-width:620px;margin:0 auto;
+  }
+  .guard-step{
+    display:flex;align-items:center;gap:12px;
+    background:#fff;border:2px solid var(--line);border-radius:8px;
+    padding:12px 16px;position:relative;
+  }
+  .guard-step .num{
+    width:30px;height:30px;border-radius:50%;background:var(--green-deep);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;
+  }
+  .guard-step .label{flex:1;font-size:14px;font-weight:600}
+  .guard-step .arrow-right{color:var(--danger);font-size:12px;font-weight:600}
+  .guard-step.pass .num{background:var(--ok)}
+
+  /* sink 展開 */
+  .sinks{display:flex;justify-content:space-around;gap:10px;margin-top:10px}
+  .sink{
+    flex:1;text-align:center;padding:10px;background:#fff;border:1px dashed var(--green-light);
+    border-radius:8px;font-size:13px;
+  }
+  .sink strong{color:var(--green-deep);display:block;margin-bottom:4px}
+
+  @media(max-width:720px){
+    section{padding:20px 16px}
+    .node{min-width:auto !important;font-size:13px;padding:10px 12px}
+    .flow-chain{flex-direction:column}
+    .flow-arrow{transform:rotate(90deg)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>大島樂眠 AI 輔睡員</h1>
+  <div class="sub">System Architecture Overview · v3</div>
+  <div class="badge">8 Skills · 多 Sink 審計 · WMS × Shopline × 追客 · 儀表板</div>
+</header>
+
+<!-- ═══════════════ 1. 高層資料流 ═══════════════ -->
+<section>
+  <h2>一、高層資料流（顧客視角）</h2>
+  <div class="diagram">
+    <div class="row"><div class="node customer">👤 顧客<div class="desc">LINE 官方帳號</div></div></div>
+    <div class="arrow double"></div>
+    <div class="row"><div class="node channel">📱 LINE Official<div class="desc">訊息通道</div></div></div>
+    <div class="arrow double"></div>
+    <div class="row"><div class="node channel">💬 Omnichat<div class="desc">客服台 / 人工接管介面</div></div></div>
+    <div class="arrow double"></div>
+    <div class="row"><div class="node channel">⚙️ Make.com<br><div class="desc">Webhook 路由</div></div></div>
+    <div class="arrow double"></div>
+    <div class="row"><div class="node core">🧠 FastAPI Backend<div class="desc">Railway · main.py</div></div></div>
+    <div class="arrow"></div>
+    <div class="row"><div class="node core">🎯 cs-brain<div class="desc">中控編排引擎</div></div></div>
+    <div class="arrow"></div>
+    <div class="row">
+      <div class="node skill">cs-persona</div>
+      <div class="node skill">cs-knowledge</div>
+      <div class="node skill">cs-memory</div>
+      <div class="node skill-guard">cs-guard</div>
+      <div class="node skill-data">cs-shopline</div>
+      <div class="node skill-data">cs-logistics</div>
+      <div class="node skill-data">cs-instore</div>
+    </div>
+  </div>
+  <div class="highlight">
+    <strong>核心邏輯：</strong>所有顧客訊息都經過 <code>cs-brain</code> 唯一入口，它負責編排其他 7 個 skill 並組 prompt 呼叫 LLM。無論資料查詢、知識回答、追客排程，都由 brain 決定流程。
+  </div>
+</section>
+
+<!-- ═══════════════ 2. cs-brain 編排 ═══════════════ -->
+<section>
+  <h2>二、cs-brain 單輪對話生命週期</h2>
+  <div class="flow-chain">
+    <div class="flow-step">1. Memory<br>讀取</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">2. Intent<br>分類</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">3. Persona<br>載入</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">4. 資料<br>抓取</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">5. 知識<br>查詢</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">6. Guard<br>安全檢查</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step core">7. LLM<br>組 prompt</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">8. Memory<br>寫回</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">9. 回覆<br>Omnichat</div>
+  </div>
+
+  <div class="grid">
+    <div class="card core">
+      <h4><span class="dot"></span>模型分流（省成本）</h4>
+      <ul>
+        <li>80% 流量：GPT-4o mini（簡單 chat/member/store/order）</li>
+        <li>20% 深度：GPT-4o（product/sleep/return）</li>
+        <li>LLM_MODE=mock 可離線跑測試</li>
+      </ul>
+    </div>
+    <div class="card core">
+      <h4><span class="dot"></span>10 種 Intent 分類</h4>
+      <ul>
+        <li>CHAT / MEMBER / STORE / ORDER</li>
+        <li>PRODUCT / SLEEP / RETURN</li>
+        <li>CARGO / STOCK / GREETING</li>
+      </ul>
+    </div>
+    <div class="card core">
+      <h4><span class="dot"></span>記憶邊界</h4>
+      <ul>
+        <li>短期：最近 10 輪完整保留</li>
+        <li>長期：超過壓縮為摘要</li>
+        <li>Profile：merge 不 overwrite</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 3. 8 Skill 分工 ═══════════════ -->
+<section>
+  <h2>三、8 個 Skill 的分工與邊界</h2>
+
+  <h3>中控層</h3>
+  <div class="grid">
+    <div class="card core">
+      <h4><span class="dot"></span>cs-brain · 中控大腦</h4>
+      <ul>
+        <li>唯一入口 / 唯一出口</li>
+        <li>編排、組 prompt、呼叫 LLM</li>
+        <li>管理對話生命週期</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>內容層（知識與風格）</h3>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="dot"></span>cs-persona</h4>
+      <ul>
+        <li>小島人設、語氣規範</li>
+        <li>禁忌清單</li>
+        <li>轉接規則</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="dot"></span>cs-knowledge</h4>
+      <ul>
+        <li>產品 / 睡眠 / 服務 / 門市</li>
+        <li>會員制度 / FAQ</li>
+        <li>品牌世界觀</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="dot"></span>cs-memory</h4>
+      <ul>
+        <li>短期 10 輪 + 長期摘要</li>
+        <li>profile 合併去重</li>
+        <li>customer_journey 追蹤</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>安全層</h3>
+  <div class="grid">
+    <div class="card guard">
+      <h4><span class="dot"></span>cs-guard · 安全閘門</h4>
+      <ul>
+        <li>白 / 黑名單路徑檢查</li>
+        <li>關鍵字過濾（禁寫入）</li>
+        <li>PII 解密後遮罩</li>
+        <li>多 sink 審計（stdout / jsonl / D1）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>資料層（外部系統查詢）</h3>
+  <div class="grid">
+    <div class="card data">
+      <h4><span class="dot"></span>cs-shopline</h4>
+      <ul>
+        <li>唯讀 CRM</li>
+        <li>訂單 / 會員 / 商品</li>
+        <li>經 cs-guard</li>
+      </ul>
+    </div>
+    <div class="card data">
+      <h4><span class="dot"></span>cs-logistics（WMS 暢流）</h4>
+      <ul>
+        <li>JWT 認證 + AES PII 解密</li>
+        <li>6 白名單 GET · 13 黑名單 POST</li>
+        <li>Cache：終態 24h / 運輸 5min / 庫存 2min</li>
+      </ul>
+    </div>
+    <div class="card data">
+      <h4><span class="dot"></span>cs-instore（門市追客）</h4>
+      <ul>
+        <li>5 段追客：S0 / S1 / S2 / S3 / S4</li>
+        <li>14 日 5 則上限硬帽</li>
+        <li>AI 草稿 → 人工審核 → 送出</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 4. 安全閘門 ═══════════════ -->
+<section>
+  <h2>四、cs-guard 安全檢查流程</h2>
+  <div class="guard-flow">
+    <div class="guard-step">
+      <div class="num">1</div>
+      <div class="label">白名單路徑檢查</div>
+      <div class="arrow-right">× 不過 → 攔下 log</div>
+    </div>
+    <div class="guard-step">
+      <div class="num">2</div>
+      <div class="label">黑名單路徑檢查</div>
+      <div class="arrow-right">× 命中 → 攔下 log</div>
+    </div>
+    <div class="guard-step">
+      <div class="num">3</div>
+      <div class="label">關鍵字過濾（create/update/delete/cancel/refund）</div>
+      <div class="arrow-right">× 命中 → 攔下</div>
+    </div>
+    <div class="guard-step pass">
+      <div class="num">✓</div>
+      <div class="label">通過 → 執行 GET 請求</div>
+    </div>
+    <div class="guard-step pass">
+      <div class="num">5</div>
+      <div class="label">PII 解密 + 立即遮罩（姓名 / 電話 / 地址）</div>
+    </div>
+    <div class="guard-step pass">
+      <div class="num">6</div>
+      <div class="label">audit_logger.log_api_call() 記錄</div>
+    </div>
+  </div>
+
+  <h3>Audit Sink 扇出</h3>
+  <div class="sinks">
+    <div class="sink"><strong>stdout</strong>開發除錯</div>
+    <div class="sink"><strong>jsonl_file</strong>本機備份</div>
+    <div class="sink"><strong>Cloudflare D1</strong>長期查詢 / 儀表板</div>
+    <div class="sink"><strong>（未來）Slack</strong>異常告警</div>
+  </div>
+  <div class="highlight">
+    D1 寫入使用背景 worker（<code>threading.Thread + Queue</code>），每 10 筆或 2 秒 flush 一次，<strong>完全不阻塞主執行緒</strong>。
+  </div>
+</section>
+
+<!-- ═══════════════ 5. 儀表板管線 ═══════════════ -->
+<section>
+  <h2>五、儀表板資料管線</h2>
+  <div class="diagram">
+    <div class="row">
+      <div class="node storage">Cloudflare D1<div class="desc">audit_log 表</div></div>
+      <div class="node storage">cs-instore _LEAD_STORE<div class="desc">追客狀態</div></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="row">
+      <div class="node core">generate_dashboard.py<div class="desc">collect_live_data + inject_into_html</div></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="row">
+      <div class="node skill">dashboards/out/<div class="desc">*-latest.html + 時間戳版本</div></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="row">
+      <div class="node channel">總覽 KPI</div>
+      <div class="node channel">追客漏斗</div>
+      <div class="node channel">門市 × 輔睡員</div>
+      <div class="node channel">安全審計</div>
+      <div class="node channel">告警列表</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 6. 測試金字塔 ═══════════════ -->
+<section>
+  <h2>六、測試金字塔</h2>
+  <div class="grid">
+    <div class="card">
+      <h4><span class="dot"></span>E2E 情境測試（24 個）</h4>
+      <ul>
+        <li>test_scenarios.py</li>
+        <li>A/B/C/D/E/F/G/H/I 九大類</li>
+        <li>覆蓋全意圖 + 邊界</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="dot"></span>單元測試（20 個）</h4>
+      <ul>
+        <li>TestWMSCache × 4</li>
+        <li>TestPIIDecrypt × 4</li>
+        <li>TestAPIGuard × 6（含架構守門）</li>
+        <li>TestAuditLogger / Journey / WMSClient</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="dot"></span>LLM_MODE=mock</h4>
+      <ul>
+        <li>intent_classifier 離線關鍵字分流</li>
+        <li>model_router 離線模板回覆</li>
+        <li>priority-weighted 系統 prompt 抽取</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 7. 紅線原則 ═══════════════ -->
+<section>
+  <h2>七、架構紅線（Non-negotiable）</h2>
+  <div class="principles">
+    <div class="principle">
+      <h4>① WMS / Shopline = GET-only</h4>
+      <p>架構強制沒有 <code>wms_safe_post</code>，單元測試有守門檢查。</p>
+    </div>
+    <div class="principle">
+      <h4>② PII 永不外流</h4>
+      <p>解密後立刻遮罩，不進 log、不進 prompt、門牌號 100% 覆蓋。</p>
+    </div>
+    <div class="principle">
+      <h4>③ 追客安全帽</h4>
+      <p>14 日 5 則硬上限；5 分鐘 idempotency 防重送。</p>
+    </div>
+    <div class="principle">
+      <h4>④ AI 草稿 → 人工審</h4>
+      <p>cs-instore 永不自動送出訊息，一律先 staged 再 confirm。</p>
+    </div>
+    <div class="principle">
+      <h4>⑤ Memory 邊界</h4>
+      <p>customer_journey 合併不覆蓋，tried_products 去重保留歷史。</p>
+    </div>
+    <div class="principle">
+      <h4>⑥ 模型分流</h4>
+      <p>80% mini + 20% 全能，成本 vs 品質平衡。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 8. 部署拓撲 ═══════════════ -->
+<section>
+  <h2>八、部署拓撲</h2>
+  <table>
+    <tr><th>層級</th><th>服務</th><th>角色</th></tr>
+    <tr><td>應用</td><td>Railway</td><td>FastAPI main.py + 8 skills + .env secrets</td></tr>
+    <tr><td>儲存</td><td>Cloudflare D1</td><td>audit_log 表 · SQL 查詢</td></tr>
+    <tr><td>前端</td><td>Cloudflare Pages（待上線）</td><td>儀表板公開網址</td></tr>
+    <tr><td>接入</td><td>Make.com</td><td>LINE webhook → FastAPI</td></tr>
+    <tr><td>客服台</td><td>Omnichat</td><td>人工接管介面</td></tr>
+    <tr><td>外部 API</td><td>Shopline · 暢流 WMS · OpenAI · LINE Messaging</td><td>皆經 cs-guard / cs-logistics 受控</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════ 9. 完成度 ═══════════════ -->
+<section>
+  <h2>九、目前完成度</h2>
+  <table>
+    <tr><th>模組</th><th>狀態</th><th>重點</th></tr>
+    <tr><td>cs-brain 編排</td><td><span class="status ok">✓ 完成</span></td><td>intent + memory + persona + LLM 全通</td></tr>
+    <tr><td>cs-persona</td><td><span class="status ok">✓ 完成</span></td><td>小島人設 / 語氣 / 轉接規則</td></tr>
+    <tr><td>cs-knowledge</td><td><span class="status ok">✓ 完成</span></td><td>產品 / 睡眠 / 門市 / 會員</td></tr>
+    <tr><td>cs-memory</td><td><span class="status ok">✓ 完成</span></td><td>短期 + 長期 + profile 合併</td></tr>
+    <tr><td>cs-guard</td><td><span class="status ok">✓ 完成</span></td><td>多 sink 審計（含 D1）已完工</td></tr>
+    <tr><td>cs-shopline</td><td><span class="status ok">✓ 完成</span></td><td>唯讀 CRM 查詢</td></tr>
+    <tr><td>cs-logistics</td><td><span class="status ok">✓ 完成</span></td><td>WMS + AES PII + cache TTL 分級</td></tr>
+    <tr><td>cs-instore</td><td><span class="status ok">✓ 完成</span></td><td>5 段追客 + 14d/5 則帽</td></tr>
+    <tr><td>儀表板</td><td><span class="status ok">✓ 完成</span></td><td>HTML + generator + SQL 範本</td></tr>
+    <tr><td>測試套件</td><td><span class="status ok">✓ 完成</span></td><td>20 單元 + 24 情境全綠</td></tr>
+    <tr><td>LLM_MODE=mock</td><td><span class="status ok">✓ 完成</span></td><td>離線 pytest 可跑</td></tr>
+    <tr><td>Cowork schedule</td><td><span class="status pending">待啟動</span></td><td>每日自動重算儀表板</td></tr>
+    <tr><td>Cloudflare Pages 部署</td><td><span class="status pending">待啟動</span></td><td>儀表板公開網址</td></tr>
+    <tr><td>GitHub Actions CI</td><td><span class="status pending">待啟動</span></td><td>push 自動 pytest</td></tr>
+    <tr><td>QR 綁定生成器</td><td><span class="status pending">待啟動</span></td><td>cs-instore 門市掃碼</td></tr>
+  </table>
+</section>
+
+<footer>
+  大島樂眠 LoveFu · AI 輔睡員架構總覽 · 2026-04-15
+</footer>
+
+</div>
+</body>
+</html>

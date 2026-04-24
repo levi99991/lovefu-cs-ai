@@ -1,0 +1,23 @@
+# 大島樂眠 AI 輔睡員 — Python 依賴
+# 對應 Python 3.11+
+
+# Web 框架
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+
+# HTTP client（呼叫 OpenAI / Shopline API）
+httpx==0.27.2
+
+# Redis（生產環境記憶儲存；MEMORY_BACKEND=dict 時可以不裝）
+redis==5.1.1
+
+# 環境變數
+python-dotenv==1.0.1
+
+# WMS AES-128-ECB 解密（cs-logistics.pii_decrypt）
+pycryptodome==3.21.0
+
+# 測試（tests/test_scenarios.py）
+pyyaml==6.0.2
+pytest==8.3.3

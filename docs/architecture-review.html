@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大島樂眠 AI 輔睡員 · 架構健檢報告</title>
+<style>
+  :root{
+    --green-deep:#616853; --green-light:#90A086; --gold:#D1B895;
+    --brown:#5B4345; --cream:#F5F0E6; --bg:#FBFAF5; --ink:#2B2B2B;
+    --line:#D8D2C4; --ok:#5E8A65; --warn:#C9965C; --danger:#B7524F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;padding:40px 20px}
+  .wrap{max-width:1200px;margin:0 auto}
+  header{text-align:center;padding:32px 24px;
+    background:linear-gradient(135deg,var(--brown),var(--green-deep));
+    color:#fff;border-radius:16px;margin-bottom:32px;
+    box-shadow:0 8px 32px rgba(91,67,69,.22)}
+  header h1{font-size:26px;letter-spacing:2px;margin-bottom:6px}
+  header .tag{display:inline-block;margin-top:10px;padding:5px 14px;
+    background:rgba(255,255,255,.2);border-radius:20px;font-size:13px}
+
+  section{background:#fff;border-radius:14px;padding:28px 32px;margin-bottom:24px;
+    box-shadow:0 2px 14px rgba(91,67,69,.06);border:1px solid var(--line)}
+  h2{color:var(--brown);font-size:22px;margin-bottom:16px;padding-bottom:12px;
+    border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:10px}
+  h2::before{content:"";width:6px;height:22px;background:var(--danger);border-radius:3px}
+  h2.ok::before{background:var(--ok)}
+  h2.warn::before{background:var(--warn)}
+  h3{color:var(--green-deep);font-size:17px;margin:20px 0 10px;
+    padding-left:10px;border-left:3px solid var(--gold)}
+
+  .issue{
+    background:#FFF9F3;border-left:4px solid var(--warn);
+    padding:14px 18px;margin:12px 0;border-radius:6px
+  }
+  .issue.critical{background:#FFF5F5;border-color:var(--danger)}
+  .issue.ok{background:#F5FAF5;border-color:var(--ok)}
+  .issue h4{color:var(--brown);font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .issue.critical h4{color:var(--danger)}
+  .issue.ok h4{color:var(--ok)}
+  .issue .severity{font-size:11px;padding:2px 8px;border-radius:10px;
+    background:var(--warn);color:#fff;font-weight:700;letter-spacing:.5px}
+  .issue.critical .severity{background:var(--danger)}
+  .issue.ok .severity{background:var(--ok)}
+  .issue p{font-size:14px;color:#555;margin:6px 0}
+  .issue .fix{margin-top:8px;padding:10px 12px;background:#fff;
+    border-radius:6px;border:1px dashed var(--green-light);font-size:13px}
+  .issue .fix strong{color:var(--green-deep)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--cream);color:var(--brown);font-weight:600}
+  td.num{font-family:"SF Mono",Menlo,monospace;font-size:13px;color:var(--brown);text-align:right;white-space:nowrap}
+  tr.total{background:#FFF5E5;font-weight:700}
+  tr.total td{border-top:2px solid var(--gold);border-bottom:none}
+
+  .bar-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13px}
+  .bar-label{width:140px;color:#555}
+  .bar-track{flex:1;height:22px;background:#F0ECE2;border-radius:4px;position:relative;overflow:hidden}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--green-light),var(--green-deep));
+    display:flex;align-items:center;padding:0 8px;color:#fff;font-size:11px;font-weight:600}
+  .bar-fill.warn{background:linear-gradient(90deg,#E3B77C,var(--warn))}
+  .bar-fill.danger{background:linear-gradient(90deg,#D88580,var(--danger))}
+  .bar-time{width:90px;text-align:right;color:var(--brown);font-weight:600;font-family:monospace}
+
+  .flow-state{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:12px 0}
+  .state-box{padding:12px 14px;border-radius:8px;background:#fff;border:2px solid var(--line);font-size:13px}
+  .state-box.trigger{border-color:var(--danger);background:#FFF5F5}
+  .state-box.action{border-color:var(--warn);background:#FFF9F3}
+  .state-box.result{border-color:var(--ok);background:#F5FAF5}
+  .state-box h5{font-size:13px;margin-bottom:6px;color:var(--brown)}
+  .state-box ul{list-style:none;font-size:12px;color:#666}
+  .state-box li{padding:2px 0;padding-left:12px;position:relative}
+  .state-box li::before{content:"·";position:absolute;left:2px;color:var(--green-light)}
+
+  .ladder{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .rung{display:flex;align-items:center;gap:12px;padding:10px 14px;
+    background:#fff;border:1px solid var(--line);border-radius:8px}
+  .rung .lv{width:70px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;
+    text-align:center;color:#fff;letter-spacing:.5px}
+  .rung .lv.l1{background:var(--ok)}
+  .rung .lv.l2{background:var(--warn)}
+  .rung .lv.l3{background:var(--danger)}
+  .rung .lv.l4{background:var(--brown)}
+  .rung .desc{flex:1;font-size:14px}
+  .rung .target{font-size:12px;color:#888;white-space:nowrap}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+  .grid2 .col{background:#FBFAF5;padding:14px 16px;border-radius:8px;border:1px solid var(--line)}
+  .grid2 h5{color:var(--green-deep);font-size:14px;margin-bottom:8px}
+  .grid2 ul{list-style:none;font-size:13px;color:#555}
+  .grid2 li{padding:3px 0;padding-left:14px;position:relative}
+  .grid2 li::before{content:"›";position:absolute;left:0;color:var(--gold);font-weight:700}
+
+  .kbd{display:inline-block;padding:1px 6px;background:#F0ECE2;border:1px solid var(--line);
+    border-radius:3px;font-family:monospace;font-size:12px;color:var(--brown)}
+  .priority{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:10px;
+    font-size:11px;font-weight:700;letter-spacing:.5px;color:#fff}
+  .p-high{background:var(--danger)}
+  .p-mid{background:var(--warn)}
+  .p-low{background:var(--green-light)}
+
+  footer{text-align:center;padding:24px;color:#888;font-size:12px;letter-spacing:1px}
+
+  @media(max-width:720px){
+    section{padding:20px 16px}
+    .grid2{grid-template-columns:1fr}
+    .bar-label{width:100px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>架構健檢報告</h1>
+  <div>Logic · Latency · Handoff · API Integration</div>
+  <div class="tag">2026-04-15 Review</div>
+</header>
+
+<!-- ═══════════ 一、邏輯問題 ═══════════ -->
+<section>
+  <h2>一、邏輯問題檢視</h2>
+
+  <div class="issue critical">
+    <h4>🚨 <span class="severity">CRITICAL</span> cs-guard 的位置在生命週期圖上被誤導</h4>
+    <p>架構圖把 Guard 標為「第 6 步」，會讓人誤以為 Guard 只在 LLM 前跑一次。但實際上 <strong>Guard 必須包住每一次 Shopline / WMS 呼叫</strong>，否則資料層的任何 skill 都能繞過安全檢查。</p>
+    <div class="fix"><strong>修正：</strong>把 Guard 畫成「橫跨整個資料層的外殼」，cs-shopline / cs-logistics 的每個 API 呼叫內部都必須 <span class="kbd">wms_safe_get()</span> / <span class="kbd">shopline_safe_get()</span>，不能繞過。</div>
+  </div>
+
+  <div class="issue critical">
+    <h4>🚨 <span class="severity">CRITICAL</span> Intent 分類錯誤會汙染下游</h4>
+    <p>如果 intent 判斷錯（例如顧客說「我床墊有破洞」被分到 CHAT），下游不會抓 WMS 也不會帶 knowledge，LLM 回答會失準。目前沒有「信心閾值 fallback」。</p>
+    <div class="fix"><strong>修正：</strong>加入 <span class="kbd">intent_confidence &lt; 0.6</span> 時走「多分類並行」— 同時抓 knowledge + shopline，讓 LLM 最後決定該用哪個。</div>
+  </div>
+
+  <div class="issue">
+    <h4>⚠️ <span class="severity">WARN</span> 同一顧客連續多則訊息的競態</h4>
+    <p>顧客可能連打三條訊息（「我想退貨」→「訂單 2024xxx」→「明天有空嗎」），目前每則獨立處理，Memory 寫回會有 race condition，後一則可能覆蓋前一則 profile。</p>
+    <div class="fix"><strong>修正：</strong>導入 <strong>message debounce（2 秒）</strong> — 同一 line_uid 的訊息進佇列，2 秒內新訊息併一起處理；或用 Redis lock 保序。</div>
+  </div>
+
+  <div class="issue">
+    <h4>⚠️ <span class="severity">WARN</span> LLM_MODE=mock 誤開到 production 的風險</h4>
+    <p>mock 模式的模板回覆拿來對真顧客講話會很尷尬。環境變數無守門。</p>
+    <div class="fix"><strong>修正：</strong>在 main.py 啟動時檢查 <span class="kbd">if ENV=="production" and LLM_MODE=="mock": raise RuntimeError</span>。</div>
+  </div>
+
+  <div class="issue">
+    <h4>⚠️ <span class="severity">WARN</span> 追客 5 則硬帽 vs 顧客主動回訊</h4>
+    <p>目前的 14 日 5 則是「AI 主動發」的上限，但如果顧客主動回了 AI，是否算一則？邏輯沒界定。若算，顧客越回越多 AI 越啞。若不算，有漏洞。</p>
+    <div class="fix"><strong>修正：</strong>分開計數 — <span class="kbd">outbound_count</span>（AI 主動）硬帽 5 則；顧客主動回訊走正常對話，不佔額度。</div>
+  </div>
+
+  <div class="issue ok">
+    <h4>✓ <span class="severity">OK</span> GET-only 架構強制守門正確</h4>
+    <p>單元測試 <span class="kbd">test_no_wms_safe_post_exists</span> 已經在，從語言層面封死寫入路徑，這是對的。</p>
+  </div>
+</section>
+
+<!-- ═══════════ 二、AI 回應時間 ═══════════ -->
+<section>
+  <h2 class="warn">二、AI 回應時間估算</h2>
+
+  <h3>單則訊息端到端延遲拆解（Worst Case / No Cache）</h3>
+  <div>
+    <div class="bar-row"><div class="bar-label">LINE → Omnichat</div>
+      <div class="bar-track"><div class="bar-fill" style="width:5%">0.5s</div></div>
+      <div class="bar-time">~500ms</div></div>
+    <div class="bar-row"><div class="bar-label">Omnichat → Make</div>
+      <div class="bar-track"><div class="bar-fill" style="width:4%">0.3s</div></div>
+      <div class="bar-time">~300ms</div></div>
+    <div class="bar-row"><div class="bar-label">Make → FastAPI</div>
+      <div class="bar-track"><div class="bar-fill" style="width:3%">0.2s</div></div>
+      <div class="bar-time">~200ms</div></div>
+    <div class="bar-row"><div class="bar-label">Memory 讀取</div>
+      <div class="bar-track"><div class="bar-fill" style="width:1%"></div></div>
+      <div class="bar-time">~50ms</div></div>
+    <div class="bar-row"><div class="bar-label">Intent 分類 (LLM)</div>
+      <div class="bar-track"><div class="bar-fill warn" style="width:15%">1.5s</div></div>
+      <div class="bar-time">~1.5s</div></div>
+    <div class="bar-row"><div class="bar-label">Shopline API</div>
+      <div class="bar-track"><div class="bar-fill warn" style="width:15%">1.5s</div></div>
+      <div class="bar-time">~1.5s</div></div>
+    <div class="bar-row"><div class="bar-label">WMS API + AES</div>
+      <div class="bar-track"><div class="bar-fill danger" style="width:20%">2.0s</div></div>
+      <div class="bar-time">~2.0s</div></div>
+    <div class="bar-row"><div class="bar-label">LLM 主回覆 (GPT-4o)</div>
+      <div class="bar-track"><div class="bar-fill danger" style="width:40%">4.0s</div></div>
+      <div class="bar-time">~4.0s</div></div>
+    <div class="bar-row"><div class="bar-label">Memory 寫回</div>
+      <div class="bar-track"><div class="bar-fill" style="width:1%"></div></div>
+      <div class="bar-time">~50ms</div></div>
+    <div class="bar-row"><div class="bar-label">回傳 LINE</div>
+      <div class="bar-track"><div class="bar-fill" style="width:7%">0.7s</div></div>
+      <div class="bar-time">~700ms</div></div>
+  </div>
+
+  <table style="margin-top:20px">
+    <tr><th>情境</th><th>估算</th><th>LINE 使用者感受</th></tr>
+    <tr><td>✨ 最佳（cache hit + mini + 無外部 API）</td><td class="num">1.8 – 2.5 秒</td><td>順暢</td></tr>
+    <tr><td>🟢 一般（cache 半命中）</td><td class="num">3.5 – 5.0 秒</td><td>可接受</td></tr>
+    <tr><td>🟠 訂單查詢（Shopline + WMS 都要打）</td><td class="num">6.0 – 9.0 秒</td><td>開始不耐</td></tr>
+    <tr class="total"><td>🔴 最差（深度問題 + 全 cache miss）</td><td class="num">10 – 15 秒</td><td>顧客會流失</td></tr>
+  </table>
+
+  <div class="issue critical">
+    <h4>🚨 LINE 使用者忍受閾值 &lt; 5 秒，訂單查詢會超標</h4>
+    <p>LINE bot 平均使用者耐心約 3–5 秒。目前的 WMS + Shopline 串接在 worst case 可能拉到 10 秒以上，會有明顯轉跳去找真人的流失。</p>
+  </div>
+
+  <h3>優化策略（依投入產出比排序）</h3>
+  <div class="ladder">
+    <div class="rung">
+      <div class="lv l1">P0 必做</div>
+      <div class="desc"><strong>兩段式回覆</strong>：先秒回「我查一下你的訂單唷 🌙」，背景查資料再補完整答案</div>
+      <div class="target">感知 -70%</div>
+    </div>
+    <div class="rung">
+      <div class="lv l1">P0 必做</div>
+      <div class="desc"><strong>asyncio.gather 並行</strong>：Shopline + WMS + Knowledge 同時打，別一個一個來</div>
+      <div class="target">實際 -50%</div>
+    </div>
+    <div class="rung">
+      <div class="lv l1">P0 必做</div>
+      <div class="desc"><strong>Intent keyword fast-path</strong>：80% 訊息 regex 能判定，只有 20% 才 call LLM</div>
+      <div class="target">-1.2s</div>
+    </div>
+    <div class="rung">
+      <div class="lv l2">P1 建議</div>
+      <div class="desc"><strong>LLM streaming</strong>：token-by-token 串流回 LINE（需 Omnichat / Make 支援）</div>
+      <div class="target">感知 -40%</div>
+    </div>
+    <div class="rung">
+      <div class="lv l2">P1 建議</div>
+      <div class="desc"><strong>Cache 加強</strong>：Shopline 會員資料 10 min、門市資訊 24h、商品 1h</div>
+      <div class="target">命中率 +30%</div>
+    </div>
+    <div class="rung">
+      <div class="lv l3">P2 可選</div>
+      <div class="desc"><strong>Pre-fetch</strong>：用戶打字中（typing event）先預抓最可能的資料</div>
+      <div class="target">視場景</div>
+    </div>
+    <div class="rung">
+      <div class="lv l4">P3 觀察</div>
+      <div class="desc"><strong>LLM 替換成 Claude Haiku</strong>：有些場景可用更快模型做 draft，GPT-4o 只做複雜推理</div>
+      <div class="target">-2s</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 三、實體店輔睡員銜接 ═══════════ -->
+<section>
+  <h2 class="warn">三、實體店輔睡員銜接斷點</h2>
+
+  <div class="issue critical">
+    <h4>🚨 目前只有「追客」沒有「即時轉人工」</h4>
+    <p>cs-instore 負責的是事後追客（S0/S1/S2/S3/S4），但沒有設計「AI 即時把這通對話 handoff 給實體店輔睡員」的斷點邏輯。這是最大的架構缺口。</p>
+  </div>
+
+  <h3>四大轉人工觸發點</h3>
+  <div class="flow-state">
+    <div class="state-box trigger">
+      <h5>① 顧客明說</h5>
+      <ul>
+        <li>「我要真人」</li>
+        <li>「找客服」</li>
+        <li>「轉人工」</li>
+        <li>「我要找店員」</li>
+      </ul>
+    </div>
+    <div class="state-box trigger">
+      <h5>② AI 信心不足</h5>
+      <ul>
+        <li>intent 信心 &lt; 0.5</li>
+        <li>知識庫無匹配</li>
+        <li>連續 2 次澄清失敗</li>
+      </ul>
+    </div>
+    <div class="state-box trigger">
+      <h5>③ 情緒紅線</h5>
+      <ul>
+        <li>偵測到生氣 / 不耐</li>
+        <li>重複問同一事 3+ 次</li>
+        <li>投訴 / 客訴關鍵字</li>
+      </ul>
+    </div>
+    <div class="state-box trigger">
+      <h5>④ 高價值事件</h5>
+      <ul>
+        <li>明確要預約到店</li>
+        <li>準備下單但猶豫</li>
+        <li>退換貨 / 安心睡啟動</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Handoff 流程（即時斷點）</h3>
+  <div class="ladder">
+    <div class="rung">
+      <div class="lv l1">1</div>
+      <div class="desc"><strong>AI 偵測轉人工訊號</strong> → 呼叫 <span class="kbd">handoff.trigger(line_uid, reason)</span></div>
+      <div class="target">&lt;100ms</div>
+    </div>
+    <div class="rung">
+      <div class="lv l2">2</div>
+      <div class="desc"><strong>Omnichat 把聊天室標記為「待人工」</strong>，AI 進入靜默模式</div>
+      <div class="target">&lt;500ms</div>
+    </div>
+    <div class="rung">
+      <div class="lv l2">3</div>
+      <div class="desc"><strong>通知對應門市</strong>（LINE Notify / Slack）— 附對話摘要 + customer_journey + 建議話術</div>
+      <div class="target">&lt;2s</div>
+    </div>
+    <div class="rung">
+      <div class="lv l3">4</div>
+      <div class="desc"><strong>顧客收到銜接訊息</strong>：「我把你交給台中七期店的 Kevin 囉，他會在 10 分鐘內回你 🌙」</div>
+      <div class="target">立即</div>
+    </div>
+    <div class="rung">
+      <div class="lv l4">5</div>
+      <div class="desc"><strong>輔睡員接手</strong>，看得到完整 AI 對話歷史 + 顧客 profile，接續對話</div>
+      <div class="target">-</div>
+    </div>
+    <div class="rung">
+      <div class="lv l1">6</div>
+      <div class="desc"><strong>對話結束後</strong>，輔睡員標記結案，AI 重新啟動 + 寫回 memory 的結果標籤（成交 / 預約 / 擱置）</div>
+      <div class="target">-</div>
+    </div>
+  </div>
+
+  <h3>銜接資訊包內容（給實體店輔睡員）</h3>
+  <div class="grid2">
+    <div class="col">
+      <h5>📋 必備欄位</h5>
+      <ul>
+        <li>顧客 LINE 暱稱 + 綁定手機（若已綁）</li>
+        <li>本次對話摘要（AI 自動產）</li>
+        <li>customer_journey（試用過哪些產品）</li>
+        <li>最近一次訂單狀態</li>
+        <li>會員等級 / 點數</li>
+        <li>轉人工的觸發原因</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h5>💡 AI 建議話術</h5>
+      <ul>
+        <li>顧客當下問題的建議回覆</li>
+        <li>相關產品建議（knowledge 提供）</li>
+        <li>可用優惠 / 活動</li>
+        <li>該注意的禁忌或客訴歷史</li>
+        <li>體驗店預約建議時段</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>銜接斷點的失敗模式</h3>
+  <div class="issue">
+    <h4>⚠️ 輔睡員不在線 / 下班時段</h4>
+    <p>如果深夜或門市打烊時觸發 handoff，沒人接 → 顧客等待會更差。</p>
+    <div class="fix"><strong>修正：</strong>Handoff 前先檢查門市班表，若離線則 AI 自己撐場面 + 留言排明早處理 + 告知顧客：「現在輔睡員下班了，我幫你記下來，明天 10 點他一上班就回你 📱」</div>
+  </div>
+  <div class="issue">
+    <h4>⚠️ AI 與真人回答衝突</h4>
+    <p>AI 說可以退，店員說不行 → 品牌信任崩盤。</p>
+    <div class="fix"><strong>修正：</strong>退換貨 / 安心睡 / 價格議題一律不 AI 回答實質條件，只引導「我幫你轉給 xx 店的 Kevin 確認給你最準確的答案喔」。</div>
+  </div>
+  <div class="issue">
+    <h4>⚠️ 顧客不知道自己在跟 AI 講話</h4>
+    <p>AI 太像真人 → 接手後顧客發現是兩個人 → 尷尬。</p>
+    <div class="fix"><strong>修正：</strong>輔睡員身份統一稱「小島」，AI 講的事輔睡員會接續；如果要明確區分，在 handoff 時主動說「接下來由真人小島接手喔」。</div>
+  </div>
+</section>
+
+<!-- ═══════════ 四、API 串接問題 ═══════════ -->
+<section>
+  <h2>四、Shopline / WMS API 串接風險</h2>
+
+  <h3>Shopline Admin API</h3>
+  <table>
+    <tr><th>問題</th><th>嚴重度</th><th>對應方案</th></tr>
+    <tr>
+      <td><strong>Rate Limit</strong><br><span style="font-size:12px;color:#888">每分鐘請求上限</span></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>全局 RateLimiter（token bucket），尖峰時把 cache TTL 自動拉長；429 錯誤自動退避 backoff</td>
+    </tr>
+    <tr>
+      <td><strong>Token 過期 / 失效</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>啟動檢查 + 每小時健康檢查；失效時 AI 退回「我暫時查不到訂單唷，我先幫你聯絡店員」</td>
+    </tr>
+    <tr>
+      <td><strong>Cache 導致舊資料</strong><br><span style="font-size:12px;color:#888">顧客剛下單但 AI 查不到</span></td>
+      <td><span class="priority p-mid">中</span></td>
+      <td>顧客訊息若含「剛剛下單」「今天買」等時效關鍵字，強制 cache bypass；會員資料訂閱 Webhook 主動 invalidate</td>
+    </tr>
+    <tr>
+      <td><strong>欄位變更 / 破版</strong></td>
+      <td><span class="priority p-mid">中</span></td>
+      <td>schema validation；非預期欄位 → log warning + fallback「資料取得有點異常」</td>
+    </tr>
+    <tr>
+      <td><strong>測試環境污染 prod</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>SHOPLINE_BASE_URL 嚴格區分 dev/staging/prod；啟動時檢查並印出目前環境</td>
+    </tr>
+  </table>
+
+  <h3>WMS 暢流 API</h3>
+  <table>
+    <tr><th>問題</th><th>嚴重度</th><th>對應方案</th></tr>
+    <tr>
+      <td><strong>JWT 有效期管理</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>token 5 分鐘前自動 refresh；失效 retry 1 次 + 不成功立即告警</td>
+    </tr>
+    <tr>
+      <td><strong>AES key 外洩</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>key 只存 Railway env var，不進 git；規劃 90 天 rotation 流程；審計日誌監控異常查詢頻率</td>
+    </tr>
+    <tr>
+      <td><strong>PII 欄位位置漂移</strong><br><span style="font-size:12px;color:#888">上游改 schema 沒通知</span></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>每個欄位用 allowlist 白名單遮罩，未知欄位一律當 PII 遮掉；每天自動 diff schema</td>
+    </tr>
+    <tr>
+      <td><strong>跨系統不一致</strong><br><span style="font-size:12px;color:#888">Shopline 有 / WMS 沒（剛出單）</span></td>
+      <td><span class="priority p-mid">中</span></td>
+      <td>先 Shopline 再 WMS；WMS 無資料時明確回「訂單還在準備出貨，明天再查喔」而非「查無訂單」</td>
+    </tr>
+    <tr>
+      <td><strong>沒有 Webhook 反向推送</strong><br><span style="font-size:12px;color:#888">只能顧客主動問，AI 不知狀態變化</span></td>
+      <td><span class="priority p-mid">中</span></td>
+      <td>重要狀態（出貨、到貨）改由 Shopline Webhook 通知，不依賴 WMS 主動；或 5 分鐘 polling 熱門訂單</td>
+    </tr>
+    <tr>
+      <td><strong>Cache TTL vs 即時性權衡</strong></td>
+      <td><span class="priority p-low">低</span></td>
+      <td>已分級：終態 24h、運輸 5min、庫存 2min；訂單尾 2 碼 hash 分散打，避免同時失效</td>
+    </tr>
+  </table>
+
+  <h3>OpenAI API（補充）</h3>
+  <table>
+    <tr><th>問題</th><th>嚴重度</th><th>對應方案</th></tr>
+    <tr>
+      <td><strong>服務中斷</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>雙供應商：主 OpenAI、備 Claude API；自動切換 + 告警</td>
+    </tr>
+    <tr>
+      <td><strong>成本失控</strong></td>
+      <td><span class="priority p-mid">中</span></td>
+      <td>每日 token 上限 alarm；mini / 4o 分流，深度問題才 escalate</td>
+    </tr>
+    <tr>
+      <td><strong>Prompt Injection</strong></td>
+      <td><span class="priority p-high">高</span></td>
+      <td>顧客輸入永遠包在 <span class="kbd">[USER]...[/USER]</span>；禁止 LLM 執行訊息內的指令</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ═══════════ 五、Action Items ═══════════ -->
+<section>
+  <h2 class="ok">五、優先順序行動清單</h2>
+  <table>
+    <tr><th style="width:60px">優先</th><th>項目</th><th>影響</th><th>工時</th></tr>
+    <tr><td><span class="priority p-high">P0</span></td><td>兩段式回覆（先 ack 再補答案）</td><td>體感延遲 -70%</td><td>0.5d</td></tr>
+    <tr><td><span class="priority p-high">P0</span></td><td>asyncio.gather 並行抓 Shopline + WMS + Knowledge</td><td>實際延遲 -50%</td><td>1d</td></tr>
+    <tr><td><span class="priority p-high">P0</span></td><td>Intent keyword fast-path（80% 繞 LLM）</td><td>-1.2s</td><td>0.5d</td></tr>
+    <tr><td><span class="priority p-high">P0</span></td><td>即時轉人工 handoff 機制（4 觸發點）</td><td>補最大缺口</td><td>2d</td></tr>
+    <tr><td><span class="priority p-high">P0</span></td><td>退換貨 / 安心睡 / 價格議題強制轉人工</td><td>避免信任崩盤</td><td>0.5d</td></tr>
+    <tr><td><span class="priority p-mid">P1</span></td><td>Message debounce（2 秒）避免競態</td><td>Memory 一致性</td><td>0.5d</td></tr>
+    <tr><td><span class="priority p-mid">P1</span></td><td>Intent 低信心時走多分類並行</td><td>答非所問 -80%</td><td>1d</td></tr>
+    <tr><td><span class="priority p-mid">P1</span></td><td>outbound_count 追客計數拆分</td><td>追客合理性</td><td>0.5d</td></tr>
+    <tr><td><span class="priority p-mid">P1</span></td><td>門市班表整合 + 離線 fallback 話術</td><td>夜間體驗</td><td>1d</td></tr>
+    <tr><td><span class="priority p-mid">P1</span></td><td>RateLimiter + token refresh + 健康檢查</td><td>穩定性</td><td>1d</td></tr>
+    <tr><td><span class="priority p-low">P2</span></td><td>Shopline Webhook 訂閱（會員 / 訂單 invalidate）</td><td>資料新鮮度</td><td>1d</td></tr>
+    <tr><td><span class="priority p-low">P2</span></td><td>LLM streaming 回傳</td><td>體感 -40%</td><td>2d</td></tr>
+    <tr><td><span class="priority p-low">P2</span></td><td>OpenAI / Claude 雙供應商切換</td><td>可用性</td><td>1.5d</td></tr>
+    <tr><td><span class="priority p-low">P2</span></td><td>Schema drift 自動 diff 警示</td><td>長期防護</td><td>1d</td></tr>
+    <tr class="total"><td colspan="3">P0 全部完成預估</td><td class="num">~4.5 天</td></tr>
+  </table>
+
+  <div class="issue ok" style="margin-top:16px">
+    <h4>✓ 建議順序</h4>
+    <p><strong>第一週：</strong>P0 五項全部上線（兩段式回覆 + 並行抓取 + keyword fast-path + handoff + 議題轉人工）— 這五項會把「能用」推到「好用」。</p>
+    <p><strong>第二週：</strong>P1 五項 — 把邊界情境補齊，避免奇怪 bug。</p>
+    <p><strong>第三週：</strong>P2 長線防護，可以邊上線邊做。</p>
+  </div>
+</section>
+
+<footer>
+  大島樂眠 LoveFu · Architecture Review · 2026-04-15
+</footer>
+
+</div>
+</body>
+</html>

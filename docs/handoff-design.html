@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cs-handoff · 實體店輔睡員銜接系統</title>
+<style>
+  :root{
+    --green-deep:#616853; --green-light:#90A086; --gold:#D1B895;
+    --brown:#5B4345; --cream:#F5F0E6; --bg:#FBFAF5; --ink:#2B2B2B;
+    --line:#D8D2C4; --ok:#5E8A65; --warn:#C9965C; --danger:#B7524F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.7;padding:40px 20px}
+  .wrap{max-width:1240px;margin:0 auto}
+  header{text-align:center;padding:32px 24px;
+    background:linear-gradient(135deg,var(--brown),var(--green-deep));
+    color:#fff;border-radius:16px;margin-bottom:32px;box-shadow:0 8px 32px rgba(91,67,69,.22)}
+  header h1{font-size:26px;letter-spacing:2px;margin-bottom:8px}
+  header .tag{display:inline-block;margin-top:10px;padding:5px 14px;
+    background:rgba(255,255,255,.2);border-radius:20px;font-size:13px}
+  section{background:#fff;border-radius:14px;padding:28px 32px;margin-bottom:24px;
+    box-shadow:0 2px 14px rgba(91,67,69,.06);border:1px solid var(--line)}
+  h2{color:var(--brown);font-size:22px;margin-bottom:16px;padding-bottom:12px;
+    border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:10px}
+  h2::before{content:"";width:6px;height:22px;background:var(--green-deep);border-radius:3px}
+  h3{color:var(--green-deep);font-size:17px;margin:20px 0 10px;
+    padding-left:10px;border-left:3px solid var(--gold)}
+  code{background:#F0ECE2;padding:1px 6px;border-radius:3px;font-family:"SF Mono",Menlo,monospace;font-size:12px;color:var(--brown)}
+  .kbd{display:inline-block;padding:1px 6px;background:#F0ECE2;border:1px solid var(--line);
+    border-radius:3px;font-family:monospace;font-size:12px;color:var(--brown)}
+
+  /* 狀態機圖 */
+  .state-machine{background:var(--cream);padding:24px;border-radius:10px;margin:16px 0}
+  .state-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+  .state-box{background:#fff;padding:14px 22px;border-radius:10px;border:2px solid var(--green-light);
+    font-weight:600;text-align:center;min-width:140px}
+  .state-box.start{border-color:var(--gold);background:#FFF8EC}
+  .state-box.active{border-color:var(--green-deep);background:#F0F3EE}
+  .state-box.good{border-color:var(--ok);background:#F0F7F0}
+  .state-box.bad{border-color:var(--danger);background:#FCEFEF}
+  .state-arrow{display:flex;align-items:center;gap:6px;color:var(--brown);font-size:12px}
+  .state-arrow::after{content:"→";font-size:20px;color:var(--green-deep)}
+
+  /* 觸發矩陣 */
+  .triggers{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:14px 0}
+  .trigger{background:#fff;border:2px solid var(--line);border-radius:10px;padding:16px}
+  .trigger.p0{border-color:var(--danger);background:#FFF5F5}
+  .trigger.p1{border-color:var(--warn);background:#FFF9F3}
+  .trigger.p2{border-color:var(--green-light);background:#F5FAF5}
+  .trigger h4{font-size:15px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:700;color:#fff;letter-spacing:1px}
+  .badge.p0{background:var(--danger)}
+  .badge.p1{background:var(--warn)}
+  .badge.p2{background:var(--green-light)}
+  .trigger ul{list-style:none;font-size:13px;color:#555}
+  .trigger li{padding:3px 0;padding-left:14px;position:relative}
+  .trigger li::before{content:"›";position:absolute;left:0;color:var(--green-deep);font-weight:700}
+
+  /* 時間階梯 */
+  .escalation{background:var(--cream);padding:24px;border-radius:10px;margin:14px 0}
+  .escalation-step{display:flex;gap:14px;margin:10px 0;align-items:center}
+  .escalation-time{min-width:80px;padding:8px 10px;background:var(--green-deep);color:#fff;
+    border-radius:6px;text-align:center;font-weight:700;font-family:monospace;font-size:13px}
+  .escalation-step.p0 .escalation-time{background:var(--danger)}
+  .escalation-step.p1 .escalation-time{background:var(--warn)}
+  .escalation-step.p2 .escalation-time{background:var(--gold);color:var(--brown)}
+  .escalation-body{flex:1;background:#fff;padding:12px 14px;border-radius:6px;border:1px solid var(--line)}
+  .escalation-body h5{font-size:14px;color:var(--brown);margin-bottom:4px}
+  .escalation-body .sub{font-size:12px;color:#666}
+  .escalation-body .msg{margin-top:8px;padding:8px 10px;background:var(--cream);border-left:3px solid var(--gold);
+    font-size:12px;color:#444;border-radius:4px}
+
+  /* 通道表 */
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--cream);color:var(--brown);font-weight:600}
+  td .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  td .dot.on{background:var(--ok)}
+  td .dot.off{background:#ccc}
+
+  /* 資料流圖 */
+  .dataflow{display:flex;flex-direction:column;gap:10px;background:var(--cream);padding:20px;border-radius:10px;margin:14px 0}
+  .flow-step{display:flex;align-items:center;gap:12px}
+  .flow-num{width:32px;height:32px;border-radius:50%;background:var(--green-deep);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .flow-body{flex:1;background:#fff;padding:10px 14px;border-radius:6px;border:1px solid var(--line);font-size:14px}
+  .flow-body code{font-size:11px}
+
+  /* API 卡片 */
+  .api-card{background:#F7F6F0;border-left:4px solid var(--green-deep);padding:12px 14px;
+    border-radius:4px;margin:10px 0;font-family:"SF Mono",monospace;font-size:13px;color:var(--brown)}
+  .api-card .method{display:inline-block;padding:2px 8px;background:var(--green-deep);color:#fff;
+    border-radius:3px;font-weight:700;font-size:11px;margin-right:8px}
+  .api-card .method.post{background:var(--gold);color:#fff}
+  .api-card .method.get{background:var(--green-deep)}
+  .api-card .desc{color:#666;font-size:12px;margin-top:4px;font-family:sans-serif}
+
+  .highlight{background:linear-gradient(135deg,var(--cream),#fff);border-left:5px solid var(--gold);
+    padding:14px 18px;border-radius:6px;margin:12px 0;font-size:14px}
+  .highlight strong{color:var(--brown)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+  .grid2 .col{background:#FBFAF5;padding:16px;border-radius:8px;border:1px solid var(--line)}
+  .grid2 h5{color:var(--green-deep);font-size:14px;margin-bottom:10px}
+  .grid2 ul{list-style:none;font-size:13px;color:#555}
+  .grid2 li{padding:4px 0;padding-left:14px;position:relative}
+  .grid2 li::before{content:"›";position:absolute;left:0;color:var(--gold);font-weight:700}
+
+  .check{color:var(--ok);font-weight:700}
+  .cross{color:var(--danger);font-weight:700}
+
+  footer{text-align:center;padding:24px;color:#888;font-size:12px;letter-spacing:1px}
+
+  @media(max-width:720px){
+    .grid2{grid-template-columns:1fr}
+    section{padding:20px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>cs-handoff｜實體店輔睡員銜接系統</h1>
+  <div>Signal Detection · State Machine · Advisor Reminder</div>
+  <div class="tag">v1.0 · 2026-04-15 · 已完工並通過 68 項測試</div>
+</header>
+
+<!-- ═══════════ 1. 系統定位 ═══════════ -->
+<section>
+  <h2>一、這個系統補什麼缺口</h2>
+  <div class="grid2">
+    <div class="col">
+      <h5>過去的缺口</h5>
+      <ul>
+        <li>cs-instore 只管「事後追客」（T+24h / 3d / 7d / 14d）</li>
+        <li>沒有即時轉人工的斷點</li>
+        <li>AI 信心低或情緒紅線時，沒機制叫人來接</li>
+        <li>輔睡員不在線，顧客沒人理也沒人知道</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h5>cs-handoff 補上的能力</h5>
+      <ul>
+        <li><span class="check">✓</span> 四大訊號即時偵測（顯性 / 信心 / 情緒 / 高價值）</li>
+        <li><span class="check">✓</span> 完整狀態機（pending → ack → resolved / missed）</li>
+        <li><span class="check">✓</span> 多通道通知（LINE Notify / Slack / Omnichat）</li>
+        <li><span class="check">✓</span> 五段式升級（5 / 15 / 30 / 60 分鐘）</li>
+        <li><span class="check">✓</span> 顧客端耐心話術自動觸發</li>
+        <li><span class="check">✓</span> 值班班表路由 + 離線 fallback</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 2. 四大觸發訊號 ═══════════ -->
+<section>
+  <h2>二、四大觸發訊號（signal_detector）</h2>
+  <div class="triggers">
+    <div class="trigger p0">
+      <h4>① EXPLICIT｜顧客明說 <span class="badge p0">P0</span></h4>
+      <ul>
+        <li>「我要真人」「找店員」「轉人工」</li>
+        <li>「不要 AI」「你是機器人嗎」</li>
+        <li>「找主管」「找經理」</li>
+      </ul>
+    </div>
+    <div class="trigger p0">
+      <h4>② EMOTION｜情緒紅線 <span class="badge p0">P0</span></h4>
+      <ul>
+        <li>怒氣：「太扯」「受不了」「爛透」</li>
+        <li>投訴：「消保官」「消基會」「告你」</li>
+        <li>累積：連續 2 次不滿意、重複問 3+ 次</li>
+      </ul>
+    </div>
+    <div class="trigger p0">
+      <h4>③ HIGH_VALUE｜高價值事件 <span class="badge p0">P0</span></h4>
+      <ul>
+        <li>退換貨 / 安心睡 / 瑕疵</li>
+        <li>議價 / VIP 價 / 折扣談判</li>
+        <li>近期到店（今天 / 明天 / 馬上）</li>
+      </ul>
+    </div>
+    <div class="trigger p1">
+      <h4>③' HIGH_VALUE｜成交訊號 <span class="badge p1">P1</span></h4>
+      <ul>
+        <li>「預約」「想試躺」「想體驗」</li>
+        <li>「怎麼下單」「要買」「分期」</li>
+        <li>對話超過 6 輪未收斂</li>
+      </ul>
+    </div>
+    <div class="trigger p1">
+      <h4>④ LOW_CONF｜AI 信心不足 <span class="badge p1">P1</span></h4>
+      <ul>
+        <li>顧客：「你沒聽懂」「我不是這個意思」</li>
+        <li>連續 2 次澄清失敗</li>
+        <li>意圖信心 &lt; 0.35</li>
+      </ul>
+    </div>
+    <div class="trigger p2">
+      <h4>P2 一般觀察 <span class="badge p2">P2</span></h4>
+      <ul>
+        <li>對話輪數累積（&gt; 6 輪未解決）</li>
+        <li>意圖信心介於 0.35~0.5</li>
+        <li>非即時，Omnichat 旗標即可</li>
+      </ul>
+    </div>
+  </div>
+  <div class="highlight">
+    <strong>優先順序：</strong>顯性 &gt; 情緒 &gt; 高價值 &gt; 信心。第一個命中的訊號決定 priority，後續訊號可 <strong>升級</strong>（但不降級）。
+  </div>
+</section>
+
+<!-- ═══════════ 3. 狀態機 ═══════════ -->
+<section>
+  <h2>三、Handoff 狀態機</h2>
+  <div class="state-machine">
+    <div class="state-row">
+      <div class="state-box start">signal_detector</div>
+      <div class="state-arrow">trigger()</div>
+      <div class="state-box active">pending</div>
+    </div>
+    <div class="state-row">
+      <div class="state-box active">pending</div>
+      <div class="state-arrow">acknowledge()</div>
+      <div class="state-box active">acknowledged</div>
+      <div class="state-arrow">resolve()</div>
+      <div class="state-box good">closed</div>
+    </div>
+    <div class="state-row">
+      <div class="state-box active">pending</div>
+      <div class="state-arrow">60 min timeout</div>
+      <div class="state-box bad">missed</div>
+    </div>
+    <div class="state-row">
+      <div class="state-box active">pending</div>
+      <div class="state-arrow">15 / 30 min</div>
+      <div class="state-box bad">escalated</div>
+      <div class="state-arrow">HQ 接手</div>
+      <div class="state-box active">acknowledged</div>
+    </div>
+  </div>
+
+  <h3>狀態欄位</h3>
+  <table>
+    <tr><th>欄位</th><th>說明</th></tr>
+    <tr><td><code>handoff_id</code></td><td>HO_ 開頭的唯一 ID</td></tr>
+    <tr><td><code>signal_type</code></td><td>EXPLICIT / EMOTION / HIGH_VALUE / LOW_CONF</td></tr>
+    <tr><td><code>priority</code></td><td>P0 / P1 / P2（可被升級）</td></tr>
+    <tr><td><code>target_type</code></td><td>store / hq / offline</td></tr>
+    <tr><td><code>advisor</code></td><td>{ name, line_id, role }</td></tr>
+    <tr><td><code>customer_journey</code></td><td>從 memory 帶出（tried_products / budget / family_context）</td></tr>
+    <tr><td><code>summary</code></td><td>最近一則 user message 摘要</td></tr>
+    <tr><td><code>suggested_reply</code></td><td>依 signal_type 給輔睡員的開場建議</td></tr>
+    <tr><td><code>escalation_log</code></td><td>升級歷史（每階段時間戳）</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════ 4. 五段式提醒 ═══════════ -->
+<section>
+  <h2>四、五段式提醒機制（advisor_reminder）</h2>
+  <div class="escalation">
+    <div class="escalation-step p0">
+      <div class="escalation-time">T+0</div>
+      <div class="escalation-body">
+        <h5>首次派發</h5>
+        <div class="sub">依 priority 決定通道：P0 全通道，P1 LINE + Omnichat，P2 僅 Omnichat 旗標</div>
+      </div>
+    </div>
+    <div class="escalation-step p1">
+      <div class="escalation-time">T+5 分</div>
+      <div class="escalation-body">
+        <h5>首席未接手 → 升級副手</h5>
+        <div class="sub">首席 + 副手雙推播；priority 自動升 P0</div>
+      </div>
+    </div>
+    <div class="escalation-step p0">
+      <div class="escalation-time">T+15 分</div>
+      <div class="escalation-body">
+        <h5>全店廣播 + 店長 Email</h5>
+        <div class="sub">所有 on-duty 輔睡員收到；同時顧客收到耐心話術 #1</div>
+        <div class="msg">📨 給顧客：「抱歉讓你久等了，輔睡員正在處理中，再稍等一下下唷 🌙」</div>
+      </div>
+    </div>
+    <div class="escalation-step p0">
+      <div class="escalation-time">T+30 分</div>
+      <div class="escalation-body">
+        <h5>HQ 總部升級</h5>
+        <div class="sub">門市仍無回應 → 推送到 HQ 值班 JANE；顧客收到升級話術</div>
+        <div class="msg">📨 給顧客：「真的很不好意思，我請我們店長來協助，他會在 5 分鐘內過來喔！」</div>
+      </div>
+    </div>
+    <div class="escalation-step p2">
+      <div class="escalation-time">T+60 分</div>
+      <div class="escalation-body">
+        <h5>標記 MISSED + AI 解靜默</h5>
+        <div class="sub">視為本批超時；寫入晨會檢討清單；AI 接手並告知顧客隔日回覆</div>
+        <div class="msg">📨 給顧客：「真的很抱歉今天輔睡員忙不過來，我已經幫你留訊息，明天一早他們就會回覆你。如果很急，可以直接打店裡電話：{store_phone}」</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <strong>關鍵設計：</strong>提醒 timer 使用 <code>threading.Timer</code>（生產可替換為 Celery / Redis Queue），接手後立即 <code>cancel_reminders()</code>，避免空推播。
+  </div>
+</section>
+
+<!-- ═══════════ 5. 通知通道 ═══════════ -->
+<section>
+  <h2>五、多通道通知（notification_dispatcher）</h2>
+  <table>
+    <tr><th>通道</th><th>P0</th><th>P1</th><th>P2</th><th>用途</th></tr>
+    <tr>
+      <td><strong>LINE Notify</strong></td>
+      <td><span class="dot on"></span>發</td>
+      <td><span class="dot on"></span>發</td>
+      <td><span class="dot off"></span>—</td>
+      <td>門市值班群組（主要）</td>
+    </tr>
+    <tr>
+      <td><strong>Slack Webhook</strong></td>
+      <td><span class="dot on"></span>發</td>
+      <td><span class="dot off"></span>—</td>
+      <td><span class="dot off"></span>—</td>
+      <td>HQ 管理層監控</td>
+    </tr>
+    <tr>
+      <td><strong>Omnichat 旗標</strong></td>
+      <td><span class="dot on"></span>發</td>
+      <td><span class="dot on"></span>發</td>
+      <td><span class="dot on"></span>發</td>
+      <td>客服台顯示「待人工」狀態</td>
+    </tr>
+    <tr>
+      <td><strong>Email（備援）</strong></td>
+      <td><span class="dot on"></span>升級用</td>
+      <td><span class="dot off"></span>—</td>
+      <td><span class="dot off"></span>—</td>
+      <td>店長 / 值班主管夜間通知</td>
+    </tr>
+  </table>
+  <div class="highlight">
+    <strong>Dedupe：</strong>同一 <code>handoff_id:channel</code> 組合 5 分鐘內不重複發送，避免升級階段轟炸。
+  </div>
+
+  <h3>通知內容模板</h3>
+  <div class="api-card" style="white-space:pre;font-size:12px">
+🌙 需要接手｜P0｜EMOTION
+原因：情緒紅線關鍵字：『太扯』
+
+顧客：王小美
+意圖：RETURN
+試過：山丘床墊, 月眠枕 3.0
+預算：20,000
+家庭：夫妻 + 2 歲小孩
+
+摘要：最近一則：你們這個床墊真的太扯了，才 3 個月就凹陷
+
+💡 建議話術：先同理情緒：「真的很抱歉讓你有這個困擾」，再具體處理問題
+🔗 進入：https://omnichat.tw/conversations?uid=U_xxx</div>
+</section>
+
+<!-- ═══════════ 6. 值班班表 ═══════════ -->
+<section>
+  <h2>六、值班班表路由（advisor_roster）</h2>
+  <table>
+    <tr><th>門市</th><th>營業時段</th><th>首席</th><th>副手</th><th>通知群組</th></tr>
+    <tr><td>台中七期旗艦店</td><td>10:00 – 21:00</td><td>小明</td><td>Amy</td><td><code>LINE_NOTIFY_TAICHUNG</code></td></tr>
+    <tr><td>台北中山店</td><td>11:00 – 21:00</td><td>Kevin</td><td>小美</td><td><code>LINE_NOTIFY_TAIPEI</code></td></tr>
+    <tr><td>高雄左營店</td><td>11:00 – 21:00</td><td>Tom</td><td>—</td><td><code>LINE_NOTIFY_KAOHSIUNG</code></td></tr>
+    <tr><td><strong>HQ 總部後援</strong></td><td>09:00 – 22:00</td><td>JANE</td><td>—</td><td><code>LINE_NOTIFY_HQ</code></td></tr>
+  </table>
+
+  <h3>路由優先順序</h3>
+  <div class="dataflow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">顧客綁定的門市（memory.profile.preferred_store_id）<strong>+ 該店有開 + 有值班</strong> → 送該店</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">其他門市有開 → 送第一家有值班的門市（可擴充：依顧客位置就近）</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">所有門市都關 + HQ 有開 → 送 HQ 值班</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">全離線 → 標記 <code>offline</code>，Omnichat 旗標 + 排明日營業時段 <code>next_open_datetime()</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 7. 與 cs-brain 整合 ═══════════ -->
+<section>
+  <h2>七、與 cs-brain 的整合點</h2>
+  <div class="dataflow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <strong>cs-brain /chat</strong> 完成 LLM 回覆後，呼叫
+        <code>check_auto_handoff(line_uid, message, intent, memory)</code>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <strong>signal_detector</strong> 按優先級掃四類訊號，命中 → 回 <code>(True, reason)</code>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <strong>handoff_manager.trigger()</strong> 建 handoff，<strong>advisor_roster</strong> 路由，<strong>notification_dispatcher.dispatch()</strong> 發通知
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <strong>cs-brain</strong> 把 <code>need_human=True</code> + <code>human_reason</code> 寫回 ChatResponse，Make.com 看到就改發 handoff 訊息給顧客
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <strong>advisor_reminder</strong> 排 5 / 15 / 30 / 60 分鐘 timer，接手後 <code>cancel_reminders()</code>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        輔睡員按 Omnichat「我接手」→ 呼叫 <code>POST /handoffs/{id}/acknowledge</code> → 觸發 <code>mark_agent_takeover()</code>，AI 靜默 24 小時
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        對話結案 → <code>POST /handoffs/{id}/resolve</code> with outcome=resolved/booked/purchased
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 8. API 介面 ═══════════ -->
+<section>
+  <h2>八、對輔睡員的 API（Omnichat 後台串接）</h2>
+
+  <div class="api-card">
+    <span class="method get">GET</span> /handoffs/pending?store_id=taichung_7
+    <div class="desc">列出該門市當前待接手的 handoff（依 priority 排序）</div>
+  </div>
+
+  <div class="api-card">
+    <span class="method get">GET</span> /handoffs/{handoff_id}
+    <div class="desc">取單一 handoff 完整內容（摘要、建議話術、customer_journey）</div>
+  </div>
+
+  <div class="api-card">
+    <span class="method post">POST</span> /handoffs/{handoff_id}/acknowledge
+    <div class="desc">輔睡員按「我接手」→ AI 靜默 24h，取消所有提醒 timer<br>
+    Body: <code>{"advisor_id": "U_advisor_kevin"}</code></div>
+  </div>
+
+  <div class="api-card">
+    <span class="method post">POST</span> /handoffs/{handoff_id}/resolve
+    <div class="desc">結案並標記 outcome（成交 / 預約 / 無回應 / 取消）<br>
+    Body: <code>{"outcome": "booked", "note": "明天 15:00 體驗"}</code></div>
+  </div>
+
+  <div class="api-card">
+    <span class="method get">GET</span> /handoffs/missed/recent?hours=24
+    <div class="desc">列出最近 24 小時超時未接的 handoff（晨會檢討用）</div>
+  </div>
+</section>
+
+<!-- ═══════════ 9. 邏輯修正 ═══════════ -->
+<section>
+  <h2>九、同場加映：本輪邏輯修正</h2>
+  <table>
+    <tr><th>問題</th><th>解法</th><th>檔案</th></tr>
+    <tr>
+      <td>Intent 分類慢（每次 call LLM）</td>
+      <td>兩段式：fast-path keyword / regex → 信心 ≥ 0.75 直接返回；低信心才 fallback LLM。<strong>預估省 -1.2 秒</strong></td>
+      <td><code>intent_classifier.py</code></td>
+    </tr>
+    <tr>
+      <td>Intent 低信心會答非所問</td>
+      <td>LLM 回傳不合法時，<strong>退回 fast-path 結果</strong>（比純 CHAT 安全）</td>
+      <td><code>intent_classifier.py</code></td>
+    </tr>
+    <tr>
+      <td>同顧客連發訊息 race condition</td>
+      <td>1.5 秒 debounce；第一則 handler 等窗口後合併處理，後續 silent=True</td>
+      <td><code>app.py</code></td>
+    </tr>
+    <tr>
+      <td>LLM_MODE=mock 誤上 prod</td>
+      <td>啟動守門：<code>ENV=production && LLM_MODE=mock</code> → RuntimeError</td>
+      <td><code>app.py _startup_safety_check</code></td>
+    </tr>
+    <tr>
+      <td>LLM 回覆後未檢查轉人工</td>
+      <td>Step 7 新增 <code>check_auto_handoff()</code>，need_human + handoff_reason 自動填回</td>
+      <td><code>app.py</code></td>
+    </tr>
+    <tr>
+      <td>cs-guard 位置誤導</td>
+      <td>確認 cs-shopline / cs-logistics 的每個呼叫都包在 safe_get 內（單元測試已守門）</td>
+      <td>架構文件更新</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ═══════════ 10. 測試覆蓋 ═══════════ -->
+<section>
+  <h2>十、測試覆蓋</h2>
+  <table>
+    <tr><th>測試檔</th><th>數量</th><th>狀態</th><th>覆蓋</th></tr>
+    <tr><td><code>tests/test_units.py</code></td><td>20</td><td><span class="check">✓ PASS</span></td><td>Cache / PII / Guard / Audit / Journey / WMSClient</td></tr>
+    <tr><td><code>tests/test_handoff.py</code></td><td>24</td><td><span class="check">✓ PASS</span></td><td>4 大訊號 / 狀態機 / 升級 / 路由</td></tr>
+    <tr><td><code>tests/test_scenarios.py</code></td><td>24</td><td><span class="check">✓ PASS</span></td><td>E2E 對話情境（mock 模式）</td></tr>
+    <tr style="background:#F5FAF5;font-weight:700"><td>合計</td><td>68</td><td><span class="check">✓ 全綠</span></td><td></td></tr>
+  </table>
+</section>
+
+<!-- ═══════════ 11. 未整合的部分 ═══════════ -->
+<section>
+  <h2>十一、未整合部分（下一步）</h2>
+  <div class="grid2">
+    <div class="col">
+      <h5>🔌 待接外部服務</h5>
+      <ul>
+        <li>LINE Notify Token（生產環境 3 門市 + HQ）</li>
+        <li>Slack Webhook（管理層監控頻道）</li>
+        <li>Omnichat flag API（實際欄位待確認）</li>
+        <li>班表系統（目前靜態 dict，未接 HRM）</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h5>🔧 可優化的點</h5>
+      <ul>
+        <li>Timer 替換為 Celery / Redis Queue（橫向擴展）</li>
+        <li>handoff_id 寫入 Cloudflare D1（長期統計）</li>
+        <li>就近門市路由（需顧客位置資料）</li>
+        <li>LINE Notify 自動帶「接手」按鈕（webhook 回推）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  大島樂眠 LoveFu · cs-handoff v1.0 · 2026-04-15
+</footer>
+
+</div>
+</body>
+</html>

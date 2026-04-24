@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 串接健檢報告 — Shopline × WMS 暢流</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #616853;
+            --accent-green: #90A086;
+            --gold: #D1B895;
+            --dark: #5B4345;
+            --light-bg: #F7F5F0;
+            --white: #FFFFFF;
+            --red: #E74C3C;
+            --yellow: #F39C12;
+            --green: #27AE60;
+            --grey: #95A5A6;
+            --light-grey: #ECF0F1;
+        }
+
+        html, body {
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--dark);
+            background-color: var(--light-bg);
+            line-height: 1.6;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--accent-green) 100%);
+            color: var(--white);
+            padding: 30px 0;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h1 {
+            font-size: 16px;
+            padding: 0 20px 30px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .sidebar nav {
+            padding: 20px 0;
+        }
+
+        .sidebar nav a {
+            display: block;
+            padding: 12px 20px;
+            color: var(--white);
+            text-decoration: none;
+            font-size: 13px;
+            transition: background-color 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar nav a:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: var(--gold);
+        }
+
+        .sidebar nav a.active {
+            background-color: rgba(0,0,0,0.1);
+            border-left-color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .container {
+            margin-left: 240px;
+            flex: 1;
+            padding: 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+            margin-left: 240px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--primary-green);
+        }
+
+        header h1 {
+            font-size: 42px;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 16px;
+            color: var(--grey);
+            margin-top: 10px;
+        }
+
+        section {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            scroll-margin-top: 80px;
+        }
+
+        section h2 {
+            font-size: 28px;
+            color: var(--primary-green);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        section h3 {
+            font-size: 18px;
+            color: var(--dark);
+            margin: 25px 0 15px 0;
+            margin-top: 30px;
+            font-weight: 600;
+        }
+
+        section p {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-red {
+            background-color: #FADBD8;
+            color: var(--red);
+            border: 1px solid var(--red);
+        }
+
+        .status-yellow {
+            background-color: #FCF3CF;
+            color: #D68910;
+            border: 1px solid var(--yellow);
+        }
+
+        .status-green {
+            background-color: #D5F4E6;
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+
+        /* Issues Section */
+        .issue {
+            background: #FAFAFA;
+            border-left: 4px solid;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .issue.critical {
+            border-left-color: var(--red);
+            background-color: #FADBD8;
+        }
+
+        .issue.warning {
+            border-left-color: var(--yellow);
+            background-color: #FCF3CF;
+        }
+
+        .issue.resolved {
+            border-left-color: var(--green);
+            background-color: #D5F4E6;
+        }
+
+        .issue-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .issue-content {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .issue-impact {
+            margin: 8px 0 8px 0;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .issue-fix {
+            color: var(--primary-green);
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 13px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, var(--accent-green) 0%, #A8B89A 100%);
+            color: var(--white);
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--light-grey);
+        }
+
+        tbody tr:hover {
+            background-color: var(--light-bg);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+
+        /* Flow Diagrams */
+        .flow-diagram {
+            background: var(--light-bg);
+            padding: 30px;
+            border-radius: 8px;
+            margin: 30px 0;
+            overflow-x: auto;
+            border: 1px solid var(--light-grey);
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .flow-box {
+            fill: var(--light-bg);
+            stroke: var(--primary-green);
+            stroke-width: 2;
+        }
+
+        .flow-text {
+            font-family: 'Noto Sans TC', monospace;
+            font-size: 12px;
+            fill: var(--dark);
+            text-anchor: middle;
+        }
+
+        .flow-arrow {
+            stroke: var(--accent-green);
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+
+        /* Bar Chart */
+        .chart-container {
+            margin: 30px 0;
+        }
+
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .chart-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .chart-label {
+            width: 80px;
+            font-weight: 500;
+            font-size: 13px;
+            text-align: right;
+        }
+
+        .chart-bar-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .chart-bar {
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: var(--white);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .bar-mock {
+            background: var(--accent-green);
+        }
+
+        .bar-warm {
+            background: var(--gold);
+        }
+
+        .bar-cold {
+            background: var(--primary-green);
+        }
+
+        /* Checklist */
+        .checklist {
+            margin: 25px 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: #FAFAFA;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid var(--light-grey);
+            transition: all 0.2s;
+        }
+
+        .checklist-item:hover {
+            background: var(--light-bg);
+            border-color: var(--accent-green);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+            accent-color: var(--primary-green);
+        }
+
+        .checklist-item input[type="checkbox"]:checked + label {
+            color: var(--accent-green);
+            text-decoration: line-through;
+        }
+
+        .checklist-item label {
+            flex: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Priority Badges */
+        .priority-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .priority-p0 {
+            background: #FADBD8;
+            color: var(--red);
+        }
+
+        .priority-p1 {
+            background: #FCF3CF;
+            color: #D68910;
+        }
+
+        .priority-p2 {
+            background: #D5F4E6;
+            color: var(--green);
+        }
+
+        .action-item {
+            padding: 15px;
+            margin: 12px 0;
+            background: #FAFAFA;
+            border-left: 4px solid;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .action-item.p0 {
+            border-left-color: var(--red);
+            background-color: #FADBD8;
+        }
+
+        .action-item.p1 {
+            border-left-color: var(--yellow);
+            background-color: #FCF3CF;
+        }
+
+        .action-item.p2 {
+            border-left-color: var(--green);
+            background-color: #D5F4E6;
+        }
+
+        .action-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .action-time {
+            font-size: 12px;
+            color: var(--grey);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #2C3E50;
+            color: #ECF0F1;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--grey);
+            font-size: 12px;
+            border-top: 1px solid var(--light-grey);
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .container {
+                margin-left: 0;
+            }
+
+            .chart-bar-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Anchor Links */
+        a {
+            color: var(--primary-green);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <h1>API 串接健檢報告</h1>
+        <nav>
+            <a href="#overview" class="nav-link active">總覽</a>
+            <a href="#shopline" class="nav-link">Shopline 串接鏈</a>
+            <a href="#wms" class="nav-link">WMS 暢流串接</a>
+            <a href="#latency" class="nav-link">延遲分析</a>
+            <a href="#checklist" class="nav-link">上線 Checklist</a>
+            <a href="#actions" class="nav-link">優先級行動</a>
+        </nav>
+    </aside>
+
+    <main class="container">
+        <header>
+            <h1>API 串接健檢報告</h1>
+            <p>Shopline × WMS 暢流 整合鏈路診斷</p>
+            <p style="font-size: 12px; margin-top: 15px; color: var(--grey);">生成時間：2026-04-20</p>
+        </header>
+
+        <!-- Section 1: Overview -->
+        <section id="overview">
+            <h2>📋 總覽</h2>
+
+            <h3>系統架構狀態</h3>
+            <p>LoveFu AI 客服系統具備完整的 Shopline 與 WMS 暢流 API 整合路徑，支援 Mock 與生產環境雙模式。兩套 API 均通過統一的安全防護層（cs-guard）進行 whitelist、blacklist 與 PII 遮蔽。</p>
+
+            <h3>防護入口點</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>防護函式</th>
+                        <th>協議</th>
+                        <th>HTTP 客戶端</th>
+                        <th>用途</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>shopline_safe_get()</code></td>
+                        <td>非同步</td>
+                        <td>httpx.AsyncClient</td>
+                        <td>Shopline REST API 查詢</td>
+                    </tr>
+                    <tr>
+                        <td><code>wms_safe_get()</code></td>
+                        <td>同步</td>
+                        <td>httpx.Client</td>
+                        <td>WMS 暢流 API 查詢</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="margin-top: 20px; padding: 15px; background: var(--light-bg); border-radius: 6px; font-size: 13px;">
+                <strong>防護機制：</strong> 兩個防護函式均實作 Endpoint whitelist（僅允許預核准端點）、IP blacklist、以及 PII 遮蔽（客戶電話/Email/姓名）。
+            </p>
+        </section>
+
+        <!-- Section 2: Shopline Integration -->
+        <section id="shopline">
+            <h2>🛍️ Shopline API 串接鏈</h2>
+
+            <h3>整合流程圖</h3>
+            <div class="flow-diagram">
+                <svg viewBox="0 0 1000 600" style="width: 100%; height: auto;">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#616853" />
+                        </marker>
+                    </defs>
+
+                    <!-- Boxes -->
+                    <rect x="50" y="30" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="120" y="62" class="flow-text" font-size="13">Make.com POST /chat</text>
+
+                    <rect x="50" y="130" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="120" y="162" class="flow-text" font-size="13">cs-brain app.py</text>
+
+                    <rect x="50" y="230" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="120" y="262" class="flow-text" font-size="13">意圖識別</text>
+
+                    <rect x="280" y="130" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="350" y="162" class="flow-text" font-size="13">_fetch_context()</text>
+
+                    <rect x="280" y="230" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="350" y="262" class="flow-text" font-size="13">cs-shopline</text>
+
+                    <rect x="510" y="130" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="580" y="162" class="flow-text" font-size="13">shopline_safe_get()</text>
+
+                    <rect x="510" y="230" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="580" y="248" class="flow-text" font-size="11">Mock / Shopline</text>
+                    <text x="580" y="262" class="flow-text" font-size="11">Admin API</text>
+
+                    <!-- Arrows -->
+                    <line x1="120" y1="80" x2="120" y2="130" class="flow-arrow"/>
+                    <line x1="120" y1="180" x2="120" y2="230" class="flow-arrow"/>
+                    <line x1="190" y1="255" x2="280" y2="155" class="flow-arrow"/>
+                    <line x1="350" y1="180" x2="350" y2="230" class="flow-arrow"/>
+                    <line x1="420" y1="255" x2="510" y2="155" class="flow-arrow"/>
+                    <line x1="580" y1="180" x2="580" y2="230" class="flow-arrow"/>
+                </svg>
+            </div>
+
+            <h3>已實作端點</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>端點</th>
+                        <th>檔案</th>
+                        <th>函式</th>
+                        <th>使用意圖</th>
+                        <th>狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/orders.json</td>
+                        <td>query_orders.py</td>
+                        <td>query_orders_by_buyer<br/>by_name, by_search, by_email</td>
+                        <td>ORDER, CARGO</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/orders/{id}.json</td>
+                        <td>query_orders.py</td>
+                        <td>（可用但未使用）</td>
+                        <td>—</td>
+                        <td><span class="status-badge status-yellow">⊘ 待用</span></td>
+                    </tr>
+                    <tr>
+                        <td>/fulfillment_orders/{id}</td>
+                        <td>query_fulfillment.py</td>
+                        <td>query_fulfillment_by_order</td>
+                        <td>ORDER</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/customers/{id}.json</td>
+                        <td>query_customer.py</td>
+                        <td>query_customer_by_id</td>
+                        <td>MEMBER</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/customers/search.json</td>
+                        <td>query_customer.py</td>
+                        <td>search_customers</td>
+                        <td>MEMBER</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr style="background: #FADBD8;">
+                        <td><strong>/products.json</strong></td>
+                        <td>—</td>
+                        <td><strong>未實作</strong></td>
+                        <td>PRODUCT</td>
+                        <td><span class="status-badge status-red">✗ 缺失</span></td>
+                    </tr>
+                    <tr style="background: #FADBD8;">
+                        <td><strong>/inventory_levels.json</strong></td>
+                        <td>—</td>
+                        <td><strong>未實作</strong></td>
+                        <td>STOCK</td>
+                        <td><span class="status-badge status-red">✗ 缺失</span></td>
+                    </tr>
+                    <tr>
+                        <td>/pickup/list.json</td>
+                        <td>—</td>
+                        <td>未實作</td>
+                        <td>—</td>
+                        <td><span class="status-badge status-yellow">⊘ 不適用</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>⚠️ 發現的問題</h3>
+
+            <div class="issue critical">
+                <div class="issue-title">🔴 Shopline 商品 API 未接</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>/products.json 在 guard 白名單中，但 cs-shopline 沒有 query_products.py 實作。PRODUCT 意圖目前只靠知識庫 markdown 檔，無法即時取得 Shopline 上架的商品價格與規格。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 顧客問「山丘床墊多少錢」時，AI 只能回知識庫的預設價格，無法反映最新檔期折扣或庫存狀態，導致銷售機會流失。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 新增 cs-shopline/query_products.py，在 PRODUCT 意圖時 parallel fetch Shopline 產品清單，並與知識庫交叉驗證。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue critical">
+                <div class="issue-title">🔴 Shopline 庫存 API 未接</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>/inventory_levels.json 在 guard 白名單中，但未實作相應查詢函式。STOCK 意圖目前只走 WMS stock_query.php，但 Shopline 本身也有庫存欄位，兩邊資料可能不同步。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 顧客問「有沒有貨」時，WMS 庫存可能與 Shopline 前台顯示不一致，尤其在剛下單或取消時易有延遲。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> STOCK 意圖同時查 Shopline inventory_levels + WMS stock，取較小值（保守策略，優先扣 Shopline）。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue warning">
+                <div class="issue-title">🟡 訂單查詢缺乏 LINE UID 映射</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>query_orders_by_buyer 需要 member_id，但顧客從 LINE 進線時，Make.com 不一定帶 member_id。目前 fallback 到手機/Email 模糊搜尋，但成功率取決於顧客是否主動提供。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 第一次對話的顧客，如果沒報手機號或訂單號，系統就查不到訂單歷史。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 新增 Shopline customers/search.json 用 LINE UID 反查 member_id 的 mapping flow，或從 Make.com webhook 帶入 Shopline customer ID。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue warning">
+                <div class="issue-title">🟡 Token 無自動續期機制</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>SHOPLINE_ACCESS_TOKEN 是靜態環境變數，Shopline OAuth token 有效期通常 30 天。超過有效期後，API 呼叫會返回 401 Unauthorized，但系統未設置自動偵測與更新。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 三十天后無人工介入情況下，所有 Shopline 查詢會 silent fail，顧客無法查訂單。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 實作 OAuth refresh token flow（Shopline 支援），或至少加入 token 過期偵測 + 告警機制。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue resolved">
+                <div class="issue-title">🟢 已修復：async 錯誤</div>
+                <div class="issue-content">
+                    <p>v2.2 更新修正了 fulfillment 查詢的 async/sync 混用問題。之前用 run_in_executor 包裝 async 的 query_fulfillment_by_order，會在 thread pool 中無法正確 await。已改為直接 await 非同步版本。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: WMS Integration -->
+        <section id="wms">
+            <h2>🚚 WMS 暢流 API 串接鏈</h2>
+
+            <h3>整合流程圖</h3>
+            <div class="flow-diagram">
+                <svg viewBox="0 0 1000 700" style="width: 100%; height: auto;">
+                    <defs>
+                        <marker id="arrowhead2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#616853" />
+                        </marker>
+                    </defs>
+
+                    <rect x="50" y="30" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="120" y="62" class="flow-text" font-size="13">cs-brain app.py</text>
+
+                    <rect x="50" y="130" width="140" height="50" class="flow-box" rx="4"/>
+                    <text x="120" y="162" class="flow-text" font-size="13">_fetch_context()</text>
+
+                    <rect x="280" y="130" width="160" height="50" class="flow-box" rx="4"/>
+                    <text x="360" y="162" class="flow-text" font-size="12">wms_client.py</text>
+
+                    <rect x="520" y="130" width="160" height="50" class="flow-box" rx="4"/>
+                    <text x="600" y="162" class="flow-text" font-size="12">wms_cache.py</text>
+
+                    <rect x="280" y="230" width="160" height="50" class="flow-box" rx="4"/>
+                    <text x="360" y="248" class="flow-text" font-size="12">wms_safe_get()</text>
+                    <text x="360" y="262" class="flow-text" font-size="12">cs-guard</text>
+
+                    <rect x="520" y="230" width="160" height="80" class="flow-box" rx="4"/>
+                    <text x="600" y="252" class="flow-text" font-size="12">Mock / 暢流 API</text>
+                    <text x="600" y="270" class="flow-text" font-size="11">BasicAuth + JWT</text>
+                    <text x="600" y="285" class="flow-text" font-size="11">PII AES Decrypt</text>
+
+                    <!-- Cache indicator -->
+                    <rect x="280" y="330" width="160" height="40" class="flow-box" rx="4" style="fill: #D5F4E6"/>
+                    <text x="360" y="355" class="flow-text" font-size="12">Cache Hit (2-60min)</text>
+
+                    <line x1="120" y1="80" x2="120" y2="130" class="flow-arrow"/>
+                    <line x1="190" y1="155" x2="280" y2="155" class="flow-arrow"/>
+                    <line x1="440" y1="155" x2="520" y2="155" class="flow-arrow"/>
+                    <line x1="600" y1="180" x2="600" y2="230" class="flow-arrow"/>
+                    <line x1="520" y1="260" x2="440" y2="260" class="flow-arrow"/>
+                    <line x1="360" y1="280" x2="360" y2="330" class="flow-arrow"/>
+                </svg>
+            </div>
+
+            <h3>已實作端點</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>端點</th>
+                        <th>快取</th>
+                        <th>函式</th>
+                        <th>使用意圖</th>
+                        <th>狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api_v1/order/order_query.php</td>
+                        <td>5 min (per order)</td>
+                        <td>query_orders</td>
+                        <td>ORDER</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api_v1/order/order_logistics.php</td>
+                        <td>5 min / 24h</td>
+                        <td>query_cargo_status</td>
+                        <td>CARGO, ORDER</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api_v1/inventory/stock_query.php</td>
+                        <td>2 min (per SKU)</td>
+                        <td>query_inventory</td>
+                        <td>STOCK</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api_v1/pos/store.php</td>
+                        <td>60 min</td>
+                        <td>query_stores</td>
+                        <td>STORE</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr>
+                        <td>/api_v1/order/logistics_code</td>
+                        <td>60 min</td>
+                        <td>query_logistics_codes</td>
+                        <td>（映射）</td>
+                        <td><span class="status-badge status-green">✓ 完成</span></td>
+                    </tr>
+                    <tr style="background: #FADBD8;">
+                        <td><strong>/api_v1/product/query</strong></td>
+                        <td>—</td>
+                        <td><strong>未實作</strong></td>
+                        <td>—</td>
+                        <td><span class="status-badge status-red">✗ 缺失</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>⚠️ 發現的問題</h3>
+
+            <div class="issue critical">
+                <div class="issue-title">🔴 WMS 同步呼叫阻塞 Event Loop</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>wms_safe_get() 使用同步 httpx.Client，但 cs-brain 執行在非同步 FastAPI 中。v2.2 版本在 _fetch_context 層加了 run_in_executor 包裝，但 wms_client.py 內部函式（_fetch_orders_uncached、_fetch_cargo_uncached 等）仍為同步且直接從同步 cache 層呼叫。當 cache miss 時，這些同步函式會直接 block 整個 event loop。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 當 WMS API 回應慢（>2 秒）時，會阻塞整個 event loop，影響其他顧客的回應速度。高流量時可能造成 FastAPI 連接排隊。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> (A) 改 wms_safe_get 為 async httpx.AsyncClient，或 (B) 在 wms_client 層面全面用 run_in_executor 包裝同步函式。建議用 (A) 以保持架構一致性。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue warning">
+                <div class="issue-title">🟡 WMS Token 單例非 Thread-Safe</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>wms_auth._token_cache 是 plain dict，多 worker / 多個 asyncio task 並行時可能 race condition。JWT token refresh 邏輯無 lock 保護。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 低機率情況下，多個 task 同時偵測到 token 過期，同時發起 refresh，導致 token 衝突或不必要的重複請求。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 在 wms_auth.py 加入 threading.Lock 或改用 asyncio.Lock（如果改為 async）保護 token refresh。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue warning">
+                <div class="issue-title">🟡 WMS PII 解密 Key 管理</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>WMS_PII_AES_KEY 直接放在環境變數。如果 key 錯誤或未設定，pii_decrypt._aes_decrypt 會默默回傳密文原文，下游 format 函式會顯示 base64 密文給 LLM。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> LLM 看到 base64 加密字串，會直接轉述給顧客，洩露加密資料或回覆包含無意義亂碼。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 應用啟動時驗證 AES key 是否正確（解一筆已知密文比對），若失敗則 fail-fast。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue warning">
+                <div class="issue-title">🟡 wms_client.py Import 路徑不一致</div>
+                <div class="issue-content">
+                    <p><strong>問題：</strong>cs-logistics/wms_client.py 第 16-17 行嘗試 <code>from lovefu_cs_guard.api_guard import wms_safe_get</code>（缺少 .scripts），正確路徑應為 <code>lovefu_cs_guard.scripts.api_guard</code>。</p>
+                    <div class="issue-impact">
+                        <strong>影響：</strong> 生產環境時可能 ImportError，導致 wms_client 走 fallback stub，返回 mock 資料。
+                    </div>
+                    <div class="issue-fix">
+                        <strong>修復建議：</strong> 改為正確的 <code>from lovefu_cs_guard.scripts.api_guard import wms_safe_get</code>。
+                    </div>
+                </div>
+            </div>
+
+            <div class="issue resolved">
+                <div class="issue-title">🟢 快取策略合理</div>
+                <div class="issue-content">
+                    <p>終態物流（24h）、中間態訂單（5min）、庫存（2min）、門市（60min）的快取時間符合 WMS 資料更新頻率，無需調整。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Latency Analysis -->
+        <section id="latency">
+            <h2>⏱️ 端到端延遲分析</h2>
+
+            <p>下表顯示各意圖在 Mock / 生產環境的預估延遲（不含 LLM 推論）：</p>
+
+            <div class="chart-container">
+                <div class="chart-title">Shopline / WMS 查詢延遲 (毫秒)</div>
+
+                <div class="chart-row">
+                    <div class="chart-label">CHAT</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 25px;">8</div>
+                        <div class="chart-bar bar-cold" style="width: 25px;">8</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">ORDER</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 500px;">2000</div>
+                        <div class="chart-bar bar-cold" style="width: 700px;">3500</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">CARGO</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 300px;">1000</div>
+                        <div class="chart-bar bar-cold" style="width: 500px;">2000</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">STOCK</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 300px;">1000</div>
+                        <div class="chart-bar bar-cold" style="width: 500px;">2000</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">PRODUCT</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 25px;">8</div>
+                        <div class="chart-bar bar-cold" style="width: 25px;">8</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">STORE</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 150px;">500</div>
+                        <div class="chart-bar bar-cold" style="width: 600px;">2000</div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-label">MEMBER</div>
+                    <div class="chart-bar-group">
+                        <div class="chart-bar bar-mock" style="width: 20px;">5</div>
+                        <div class="chart-bar bar-warm" style="width: 400px;">1500</div>
+                        <div class="chart-bar bar-cold" style="width: 700px;">3000</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>延遲詳解</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>意圖</th>
+                        <th>Mock</th>
+                        <th>生產 (熱快取)</th>
+                        <th>生產 (冷快取)</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CHAT</strong></td>
+                        <td>~5ms</td>
+                        <td>~8ms</td>
+                        <td>~8ms</td>
+                        <td>純 LLM，無 API 呼叫</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ORDER</strong></td>
+                        <td>~5ms</td>
+                        <td>~2s</td>
+                        <td>~3.5s</td>
+                        <td>Shopline orders + WMS logistics (並行)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CARGO</strong></td>
+                        <td>~5ms</td>
+                        <td>~1s</td>
+                        <td>~2s</td>
+                        <td>WMS logistics (快取 5min ~ 24h)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>STOCK</strong></td>
+                        <td>~5ms</td>
+                        <td>~1s</td>
+                        <td>~2s</td>
+                        <td>WMS inventory (快取 2min)</td>
+                    </tr>
+                    <tr style="background: var(--light-bg);">
+                        <td><strong>PRODUCT</strong></td>
+                        <td>~5ms</td>
+                        <td>~8ms</td>
+                        <td>~8ms</td>
+                        <td>目前仅靠知識庫，無 API 呼叫</td>
+                    </tr>
+                    <tr>
+                        <td><strong>STORE</strong></td>
+                        <td>~5ms</td>
+                        <td>~0.5s</td>
+                        <td>~2s</td>
+                        <td>WMS stores (快取 60min)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MEMBER</strong></td>
+                        <td>~5ms</td>
+                        <td>~1.5s</td>
+                        <td>~3s</td>
+                        <td>Shopline customers (無快取)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>兩階段確認機制 (v2.2)</h3>
+            <p style="padding: 15px; background: #D5F4E6; border-radius: 6px; font-size: 13px;">
+                <strong>✓ 優化：</strong> v2.2 引入兩階段 ACK 機制，對 ORDER / CARGO / STOCK / MEMBER / STORE 意圖，系統在 ~200ms 內送出初始確認訊息（「查詢中...」），接著在後台平行查詢 API。顧客感知延遲 = ACK 傳遞時間（通常 &lt;200ms），而非整個查詢完成時間。
+            </p>
+        </section>
+
+        <!-- Section 5: Pre-launch Checklist -->
+        <section id="checklist">
+            <h2>✅ 上線前 Checklist</h2>
+
+            <h3>Shopline 上線前</h3>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="s1">
+                    <label for="s1">取得 Shopline Admin API Access Token（向 Shopline 商店管理員申請）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s2">
+                    <label for="s2">設定 SHOPLINE_STORE_HANDLE 環境變數</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s3">
+                    <label for="s3">設定 SHOPLINE_ACCESS_TOKEN 環境變數</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s4">
+                    <label for="s4">切換 SHOPLINE_MODE=production</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s5">
+                    <label for="s5">驗證 /orders.json 回傳格式與 mock 一致</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s6">
+                    <label for="s6">實作 OAuth token refresh（建議但非必須）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s7">
+                    <label for="s7">新增 query_products.py 接 /products.json</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="s8">
+                    <label for="s8">新增 Shopline inventory_levels 查詢</label>
+                </div>
+            </div>
+
+            <h3>WMS 上線前</h3>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="w1">
+                    <label for="w1">取得 WMS BasicAuth 帳密（向暢流物流申請）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w2">
+                    <label for="w2">設定 WMS_BASIC_AUTH_USER / WMS_BASIC_AUTH_PASS</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w3">
+                    <label for="w3">設定 WMS_PII_AES_KEY（向暢流取得）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w4">
+                    <label for="w4">切換 WMS_MODE=production</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w5">
+                    <label for="w5">驗證 token 取得流程（/api_v1/token/authorize.php）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w6">
+                    <label for="w6">驗證 AES 解密正確（用已知密文測試）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w7">
+                    <label for="w7">確認 WMS 白名單的 6 個端點可連通</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="w8">
+                    <label for="w8">修正 wms_client.py import 路徑</label>
+                </div>
+            </div>
+
+            <h3>通用設置</h3>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="c1">
+                    <label for="c1">設定 ENV=production</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c2">
+                    <label for="c2">確認 LLM_MODE=production（不是 mock）</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c3">
+                    <label for="c3">設定 OPENAI_API_KEY</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c4">
+                    <label for="c4">（可選）設定 ANTHROPIC_API_KEY 作為 fallback</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="c5">
+                    <label for="c5">Railway / Docker 部署驗證</label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: Priority Actions -->
+        <section id="actions">
+            <h2>🎯 建議優先級行動項</h2>
+
+            <h3>P0 上線阻塞 (必須在上線前完成)</h3>
+
+            <div class="action-item p0">
+                <strong>1. 修正 wms_client.py import 路徑</strong>
+                <p>cs-logistics/wms_client.py 第 16-17 行改為 <code>from lovefu_cs_guard.scripts.api_guard import wms_safe_get</code>。</p>
+                <div class="action-time">預估時間：10 分鐘</div>
+            </div>
+
+            <div class="action-item p0">
+                <strong>2. 設定 Shopline Token + 切 production 測試</strong>
+                <p>
+                    (1) 向 Shopline 商店管理員申請 Admin API Access Token<br>
+                    (2) 設定 SHOPLINE_STORE_HANDLE 與 SHOPLINE_ACCESS_TOKEN<br>
+                    (3) 切換 SHOPLINE_MODE=production<br>
+                    (4) 測試 /orders.json 端點是否正常回應
+                </p>
+                <div class="action-time">預估時間：2 小時</div>
+            </div>
+
+            <div class="action-item p0">
+                <strong>3. 設定 WMS 帳密 + AES key + 切 production 測試</strong>
+                <p>
+                    (1) 向暢流物流申請 BasicAuth 帳密與 PII_AES_KEY<br>
+                    (2) 設定 WMS_BASIC_AUTH_USER / PASS / WMS_PII_AES_KEY<br>
+                    (3) 切換 WMS_MODE=production<br>
+                    (4) 測試 token 獲取與 API 連接<br>
+                    (5) 驗證 AES 解密是否正確
+                </p>
+                <div class="action-time">預估時間：2 小時</div>
+            </div>
+
+            <h3>P1 上線後一週內 (功能補全)</h3>
+
+            <div class="action-item p1">
+                <strong>1. 新增 query_products.py 接 Shopline 商品 API</strong>
+                <p>
+                    實作 cs-shopline/query_products.py，調用 /products.json 端點。PRODUCT 意圖時 parallel fetch 商品清單，並與知識庫交叉驗證以確保價格實時性。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+
+            <div class="action-item p1">
+                <strong>2. 新增 LINE UID → member_id 映射</strong>
+                <p>
+                    實作 Make.com → Shopline customer 反查邏輯。當顧客從 LINE 進線但未提供 member_id 時，以 LINE UID 反查 Shopline customers 資料，建立映射表。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+
+            <div class="action-item p1">
+                <strong>3. WMS 非同步化（解決 event loop blocking）</strong>
+                <p>
+                    改 wms_safe_get 為 async httpx.AsyncClient，或全面用 run_in_executor 包裝 wms_client 同步函式。此舉可大幅降低高流量下的延遲變異。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+
+            <div class="action-item p1">
+                <strong>4. WMS token thread-safe 加鎖</strong>
+                <p>
+                    在 wms_auth.py 加入 threading.Lock 保護 _token_cache，避免並行 refresh 衝突。
+                </p>
+                <div class="action-time">預估時間：30 分鐘</div>
+            </div>
+
+            <h3>P2 優化項 (非阻塞)</h3>
+
+            <div class="action-item p2">
+                <strong>1. Shopline inventory_levels 雙源庫存比對</strong>
+                <p>
+                    STOCK 意圖同時查 Shopline inventory_levels + WMS stock，取較小值確保不超賣。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+
+            <div class="action-item p2">
+                <strong>2. Shopline OAuth token 自動續期</strong>
+                <p>
+                    實作 OAuth refresh token flow 或至少加 token 過期偵測 + 告警機制。避免 30 天後無人工介入 silent fail。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+
+            <div class="action-item p2">
+                <strong>3. WMS PII AES key 啟動驗證</strong>
+                <p>
+                    應用啟動時驗證 AES key 是否正確（解一筆已知密文比對），若失敗則 fail-fast 而非 silent fail。
+                </p>
+                <div class="action-time">預估時間：1 小時</div>
+            </div>
+
+            <div class="action-item p2">
+                <strong>4. WMS product/query 端點接入</strong>
+                <p>
+                    若暢流新增產品查詢端點，新增相應的 wms_client.py query_wms_products 函式以支援 PRODUCT 意圖的實時查詢。
+                </p>
+                <div class="action-time">預估時間：4 小時</div>
+            </div>
+        </section>
+
+        <footer>
+            <p>LoveFu AI 客服系統 API 整合健檢報告</p>
+            <p>本報告基於代碼審計與架構分析生成，建議定期更新。</p>
+            <p style="margin-top: 10px; color: var(--accent-green); font-size: 11px;">
+                <strong>製作人：</strong> Claude Code Agent | <strong>生成時間：</strong> 2026-04-20
+            </p>
+        </footer>
+    </main>
+
+    <script>
+        // Navigation active state
+        document.querySelectorAll('.sidebar nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('.sidebar nav a').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            });
+
+            // Set active based on hash
+            if (window.location.hash === link.getAttribute('href')) {
+                link.classList.add('active');
+            }
+        });
+
+        // Checkbox persistence
+        document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach(checkbox => {
+            const key = checkbox.id;
+            if (localStorage.getItem(key)) {
+                checkbox.checked = true;
+            }
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    localStorage.setItem(key, 'true');
+                } else {
+                    localStorage.removeItem(key);
+                }
+            });
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

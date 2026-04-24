@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoveFu AI 輔睡員 v2.2.0 - 系統架構文件</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #616853;
+            --accent-green: #90A086;
+            --gold: #D1B895;
+            --dark: #5B4345;
+            --light-bg: #F7F5F0;
+            --white: #FFFFFF;
+            --shadow: 0 2px 8px rgba(91, 67, 69, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--light-bg);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--primary-green);
+            color: var(--white);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem 1.5rem;
+            border-bottom: 2px solid var(--accent-green);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--gold);
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            color: var(--accent-green);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .sidebar-nav a:hover {
+            background: rgba(144, 160, 134, 0.2);
+            border-left-color: var(--gold);
+            color: var(--white);
+        }
+
+        .sidebar-nav a.active {
+            background: rgba(209, 184, 149, 0.15);
+            border-left-color: var(--gold);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .main {
+            margin-left: 280px;
+            flex: 1;
+            padding: 3rem;
+            max-width: 1400px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            padding: 3rem 2.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--gold);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--accent-green);
+            margin-bottom: 1rem;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .meta-value {
+            color: var(--primary-green);
+            font-weight: 700;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 2rem 0;
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--dark);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #E8E5DB;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-green), var(--accent-green));
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Section */
+        .section {
+            background: var(--white);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            scroll-margin-top: 100px;
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .section.highlight {
+            border-left-color: var(--gold);
+            background: linear-gradient(135deg, rgba(209, 184, 149, 0.03), rgba(144, 160, 134, 0.03));
+        }
+
+        .section h2 {
+            font-size: 1.8rem;
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            color: var(--accent-green);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .section h3 {
+            font-size: 1.3rem;
+            color: var(--primary-green);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .section h4 {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.75rem;
+            line-height: 1.7;
+        }
+
+        /* Code blocks */
+        code {
+            background: #F0EEEA;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: var(--dark);
+        }
+
+        pre {
+            background: #2D2D2D;
+            color: #F8F8F2;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: var(--primary-green);
+            color: var(--white);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border: none;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #E8E5DB;
+        }
+
+        tr:hover {
+            background: rgba(209, 184, 149, 0.05);
+        }
+
+        /* Flow diagram */
+        .flow-diagram {
+            background: #FAFAF8;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border: 1px solid #E8E5DB;
+        }
+
+        .flow-step {
+            background: var(--white);
+            border: 2px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            font-weight: 500;
+        }
+
+        .flow-step.critical {
+            border-color: var(--gold);
+            background: rgba(209, 184, 149, 0.05);
+        }
+
+        .flow-step.new {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .flow-step.new::before {
+            content: "⭐ NEW";
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: 0.75rem;
+        }
+
+        /* Cards Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(97, 104, 83, 0.05), rgba(144, 160, 134, 0.05));
+            border: 1px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(91, 67, 69, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-content {
+            font-size: 0.95rem;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Test coverage visualization */
+        .test-chart {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .test-item {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .test-item-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4CAF50;
+            margin-bottom: 0.5rem;
+        }
+
+        .test-item-label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .test-item-status {
+            font-size: 0.9rem;
+            color: #4CAF50;
+            font-weight: 700;
+        }
+
+        /* Collapsible */
+        .collapsible {
+            background: rgba(209, 184, 149, 0.1);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary-green);
+        }
+
+        .collapsible:hover {
+            background: rgba(209, 184, 149, 0.15);
+        }
+
+        .collapsible.active {
+            background: rgba(209, 184, 149, 0.2);
+        }
+
+        .collapse-icon {
+            font-size: 1.2rem;
+            transition: var(--transition);
+            display: inline-block;
+        }
+
+        .collapsible.active .collapse-icon {
+            transform: rotate(180deg);
+        }
+
+        .collapse-content {
+            display: none;
+            background: #FAFAF8;
+            border-left: 3px solid var(--gold);
+            margin-top: 1rem;
+            padding: 1.5rem;
+            border-radius: 0 0 8px 8px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .collapse-content.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-primary {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .badge-accent {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .badge-gold {
+            background: var(--gold);
+            color: var(--dark);
+        }
+
+        .badge-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                padding: 0;
+                transform: translateX(-100%);
+                transition: var(--transition);
+            }
+
+            .sidebar.open {
+                width: 280px;
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 2rem 1.5rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .header {
+                padding: 2rem 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .test-chart {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1>LoveFu AI</h1>
+                <p>輔睡員 v2.2.0</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="#overview" class="nav-link active">系統概覽</a></li>
+                <li><a href="#cs-brain" class="nav-link">cs-brain 生命週期</a></li>
+                <li><a href="#intent" class="nav-link">意圖分類</a></li>
+                <li><a href="#llm-fallback" class="nav-link">LLM 雙提供商</a></li>
+                <li><a href="#async-fetch" class="nav-link">並行數據抓取</a></li>
+                <li><a href="#handoff" class="nav-link">cs-handoff 模組</a></li>
+                <li><a href="#notification" class="nav-link">通知系統</a></li>
+                <li><a href="#advisor" class="nav-link">顧問名冊</a></li>
+                <li><a href="#persistence" class="nav-link">持久化層</a></li>
+                <li><a href="#celery" class="nav-link">Celery/Redis</a></li>
+                <li><a href="#security" class="nav-link">安全性</a></li>
+                <li><a href="#testing" class="nav-link">測試覆蓋率</a></li>
+                <li><a href="#env-vars" class="nav-link">環境變數</a></li>
+                <li><a href="#deployment" class="nav-link">部署架構</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Header -->
+            <div class="header">
+                <h1>LoveFu AI 輔睡員</h1>
+                <p>系統架構文件 v2.2.0</p>
+                <div class="header-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">版本:</span>
+                        <span class="meta-value">2.2.0</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">技能模組:</span>
+                        <span class="meta-value">9 個</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">測試涵蓋:</span>
+                        <span class="meta-value">68/68 ✓</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">品牌:</span>
+                        <span class="meta-value">CIS × LoveFu</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-container">
+                <div class="progress-label">文件完整性進度</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-stats">
+                    <span>全部 14 個章節已包含</span>
+                    <span>100% 完成</span>
+                </div>
+            </div>
+
+            <!-- Section 1: System Overview -->
+            <section id="overview" class="section">
+                <h2>1. 系統概覽</h2>
+                <p class="section-subtitle">LoveFu AI 輔睡員 v2.2.0 - 完整系統架構</p>
+
+                <h3>核心身份</h3>
+                <ul>
+                    <li><strong>系統名稱:</strong> LoveFu AI 輔睡員 (Sleep Advisor)</li>
+                    <li><strong>版本:</strong> 2.2.0</li>
+                    <li><strong>品牌:</strong> CIS × LoveFu</li>
+                    <li><strong>語言:</strong> 繁體中文 (Traditional Chinese)</li>
+                </ul>
+
+                <h3>九大技能模組 (Skills)</h3>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-title">cs-brain</div>
+                        <div class="card-content">主大腦 - 消息路由、意圖分類、LLM 調用</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-persona</div>
+                        <div class="card-content">人設 - 角色定義、語氣風格、品牌聲音</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-knowledge</div>
+                        <div class="card-content">知識庫 - 產品信息、常見問題、內容管理</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-memory</div>
+                        <div class="card-content">記憶系統 - 用戶對話歷史、偏好、上下文</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-guard</div>
+                        <div class="card-content">安全守衛 - PII 遮蔽、審計日誌、訪問控制</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-shopline</div>
+                        <div class="card-content">商城集成 - 訂單查詢、產品推薦、支付</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-logistics</div>
+                        <div class="card-content">物流模組 - 發貨跟蹤、配送狀態、地址驗證</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-instore</div>
+                        <div class="card-content">門店模組 - 庫存查詢、門店定位、服務預約</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">cs-handoff</div>
+                        <div class="card-content">客服轉接 - 人工接入、優先級路由、提醒升級</div>
+                    </div>
+                </div>
+
+                <h3>系統流程 (入口到出口)</h3>
+                <div class="flow-diagram">
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <strong>完整消息流</strong>
+                    </div>
+                    <div class="flow-step">
+                        Make.com 接收 POST /chat 請求
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        cs-brain 主模組接管
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step new">
+                        立即返回 ack_text (確認消息)
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        執行 8 步生命週期 (見下節)
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step new">
+                        生成完整回覆 (full_reply)
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        通過 Make.com 發送至 LINE Reply
+                    </div>
+                </div>
+
+                <h3>新增特性 v2.2.0</h3>
+                <ul>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>兩階段回覆:</strong> 立即 ack_text + 最終 full_reply</li>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>LLM 雙提供商:</strong> OpenAI + Anthropic 自動切換</li>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>並行數據抓取:</strong> asyncio.gather 並發請求</li>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>Celery/Redis:</strong> 替代 threading.Timer 的任務隊列</li>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>HRM 集成:</strong> 顧問名冊動態更新</li>
+                    <li><span class="badge badge-success">✓ 新</span> <strong>D1 持久化:</strong> Cloudflare 數據庫支持</li>
+                </ul>
+            </section>
+
+            <!-- Section 2: cs-brain Lifecycle -->
+            <section id="cs-brain" class="section">
+                <h2>2. cs-brain 生命週期</h2>
+                <p class="section-subtitle">完整的 8 步消息處理流程</p>
+
+                <h3>流程總覽</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <strong>Step -1:</strong> 冪等性檢查 (Idempotency Check)
+                        <br><small>使用消息 ID 檢查是否已處理過相同消息</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step -0.5:</strong> 消息去重 (Message Debounce)
+                        <br><small>1.5 秒時間窗口，Leader/Follower 機制防止重複</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step 0:</strong> 多渠道共存檢查 (Omnichat Coexist Check)
+                        <br><small>如果客戶已在另一個渠道聊天，靜音當前消息</small>
+                    </div>
+                    <div class="flow-step critical">
+                        <strong>Step 1:</strong> 升級關鍵詞攔截 (Escalation Keyword Intercept)
+                        <br><small>立即檢測 P0 信號 (例: 投訴、緊急、人工)</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step 2:</strong> 加載記憶 (Load Memory)
+                        <br><small>從 Redis/數據庫 檢索用戶對話歷史和偏好</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step 3:</strong> 意圖分類 (Intent Classification)
+                        <br><small>兩階段: 快速路徑 (0.75 閾值) → LLM 回退</small>
+                    </div>
+                    <div class="flow-step new critical">
+                        <strong>Step 3.5:</strong> 生成立即確認 (Generate Instant Ack)
+                        <br><small>根據意圖生成快速確認文本，立即返回客戶</small>
+                    </div>
+                    <div class="flow-step new">
+                        <strong>Step 4:</strong> 並行抓取上下文 (Parallel Context Fetch)
+                        <br><small>asyncio.gather 同時獲取訂單、庫存、門店信息</small>
+                    </div>
+                    <div class="flow-step new critical">
+                        <strong>Step 5:</strong> 組裝提示詞 + LLM 生成 (Assemble Prompt + LLM Generate)
+                        <br><small>雙提供商回退: OpenAI → Anthropic</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step 6:</strong> 保存記憶 (Save Memory)
+                        <br><small>更新對話歷史、用戶偏好、交互記錄</small>
+                    </div>
+                    <div class="flow-step">
+                        <strong>Step 7:</strong> 轉接檢查 (Handoff Check)
+                        <br><small>自動檢測是否需要轉接人工 (情感、高價值、低置信度)</small>
+                    </div>
+                </div>
+
+                <h3>詳細步驟說明</h3>
+
+                <h4>Step -1: 冪等性檢查</h4>
+                <ul>
+                    <li>使用消息 ID 和時間戳檢查</li>
+                    <li>避免重複處理相同消息</li>
+                    <li>實現: Redis 鍵過期時間 5 分鐘</li>
+                </ul>
+
+                <h4>Step -0.5: 消息去重</h4>
+                <ul>
+                    <li>時間窗口: 1.5 秒</li>
+                    <li>Leader/Follower 機制: 第一條為 leader，後續為 follower</li>
+                    <li>Follower 消息在窗口內自動丟棄</li>
+                    <li>防止網絡抖動導致的重複</li>
+                </ul>
+
+                <h4>Step 0: 多渠道共存檢查</h4>
+                <ul>
+                    <li>檢查用戶是否在 LINE / Omnichat / 門店等渠道同時活動</li>
+                    <li>優先級規則: LINE > Omnichat > 其他</li>
+                    <li>低優先級渠道收到消息時標記為 muted</li>
+                </ul>
+
+                <h4>Step 1: 升級關鍵詞攔截</h4>
+                <ul>
+                    <li>檢查消息內容是否含有 P0 關鍵詞</li>
+                    <li>關鍵詞示例: 投訴、緊急、人工客服、問題、建議</li>
+                    <li>如果檢測到 P0，立即觸發轉接流程</li>
+                    <li>不進行 LLM 調用，直接返回轉接確認</li>
+                </ul>
+
+                <h4>Step 2: 加載記憶</h4>
+                <ul>
+                    <li>查詢 MemoryStore / D1 獲取用戶歷史</li>
+                    <li>加載項目: 對話歷史、購買記錄、偏好、上次交互時間</li>
+                    <li>超時: 2 秒，超時則返回空記憶</li>
+                </ul>
+
+                <h4>Step 3: 意圖分類 (兩階段)</h4>
+                <ul>
+                    <li><strong>階段 1 - 快速路徑:</strong>
+                        <ul>
+                            <li>關鍵詞匹配 + 正則表達式</li>
+                            <li>計算置信度分數</li>
+                            <li>如果分數 ≥ 0.75，直接返回</li>
+                        </ul>
+                    </li>
+                    <li><strong>階段 2 - LLM 回退:</strong>
+                        <ul>
+                            <li>置信度 &lt; 0.75 或快速路徑失敗</li>
+                            <li>調用 LLM 進行智能分類</li>
+                            <li>約占 20% 流量</li>
+                        </ul>
+                    </li>
+                    <li>意圖類型: ORDER, STORE, STOCK, CARGO, RETURN, GENERAL, COMPLAINT</li>
+                </ul>
+
+                <h4>Step 3.5: 生成立即確認 (NEW)</h4>
+                <ul>
+                    <li>根據 Step 3 的意圖類型生成快速確認</li>
+                    <li>確認示例:
+                        <ul>
+                            <li>ORDER: "正在查詢您的訂單..."</li>
+                            <li>STORE: "為您搜尋最近的門店..."</li>
+                            <li>COMPLAINT: "收到您的反饋，立即為您轉接..."</li>
+                        </ul>
+                    </li>
+                    <li>目的: 提高用戶感知響應速度</li>
+                    <li>返回給 Make.com 作為 ack_text</li>
+                </ul>
+
+                <h4>Step 4: 並行數據抓取 (NEW)</h4>
+                <ul>
+                    <li>使用 asyncio.gather 同步執行多個數據源</li>
+                    <li>根據意圖決定抓取內容:
+                        <ul>
+                            <li><strong>ORDER:</strong> Shopline + WMS + Fulfillment API 並行</li>
+                            <li><strong>STORE:</strong> 門店 API + 庫存查詢並行</li>
+                            <li><strong>STOCK:</strong> WMS API 查詢</li>
+                            <li><strong>CARGO:</strong> 物流系統查詢</li>
+                        </ul>
+                    </li>
+                    <li>錯誤隔離: 一個源故障不影響其他源</li>
+                    <li>超時: 各源 3 秒，總超時 5 秒</li>
+                </ul>
+
+                <h4>Step 5: 組裝提示詞 + LLM 生成 (NEW)</h4>
+                <ul>
+                    <li>組裝項目: 用戶消息 + 記憶 + 上下文 + cs-persona</li>
+                    <li>調用 LLM (雙提供商):
+                        <ul>
+                            <li><strong>主提供商:</strong> OpenAI (GPT-4o / GPT-4o mini)</li>
+                            <li><strong>回退提供商:</strong> Anthropic Claude</li>
+                            <li><strong>控制:</strong> LLM_PROVIDER_ORDER 環境變數</li>
+                        </ul>
+                    </li>
+                    <li>超時/錯誤 → 自動切換提供商</li>
+                    <li>兩個都失敗 → 降級回覆 (prewritten fallback)</li>
+                </ul>
+
+                <h4>Step 6: 保存記憶</h4>
+                <ul>
+                    <li>更新內容: 消息記錄、意圖、交互時間戳</li>
+                    <li>存儲位置: MemoryStore (開發) / D1 (生產)</li>
+                    <li>TTL: 365 天</li>
+                </ul>
+
+                <h4>Step 7: 轉接檢查</h4>
+                <ul>
+                    <li>檢測 4 種轉接信號 (詳見 Section 6)</li>
+                    <li>如果檢測到信號 → 創建轉接工單</li>
+                    <li>發送通知至 cs-handoff 模組</li>
+                </ul>
+            </section>
+
+            <!-- Section 3: Intent Classification -->
+            <section id="intent" class="section">
+                <h2>3. 意圖分類 (Two-Stage)</h2>
+                <p class="section-subtitle">快速路徑 + LLM 回退機制</p>
+
+                <h3>分類流程圖</h3>
+                <svg viewBox="0 0 600 400" style="width: 100%; max-width: 600px; margin: 1.5rem 0; background: #FAFAF8; border-radius: 8px; padding: 1rem;">
+                    <!-- Input -->
+                    <rect x="50" y="20" width="500" height="40" rx="4" fill="var(--primary-green)" opacity="0.2" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="300" y="45" text-anchor="middle" font-size="14" font-weight="600" fill="var(--dark)">用戶消息輸入</text>
+
+                    <!-- Stage 1 -->
+                    <line x1="300" y1="60" x2="300" y2="80" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <rect x="100" y="80" width="400" height="80" rx="8" fill="rgba(209, 184, 149, 0.1)" stroke="var(--gold)" stroke-width="2"/>
+                    <text x="300" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="var(--dark)">階段 1: 快速路徑 (Fast-Path)</text>
+                    <text x="300" y="135" text-anchor="middle" font-size="12" fill="var(--dark)">關鍵詞匹配 + 正則 → 置信度分數</text>
+                    <text x="300" y="155" text-anchor="middle" font-size="12" fill="var(--dark)">耗時: &lt;50ms | 覆蓋: ~80% 流量</text>
+
+                    <!-- Decision -->
+                    <line x1="300" y1="160" x2="300" y2="180" stroke="var(--accent-green)" stroke-width="2"/>
+                    <polygon points="300,180 285,200 315,200" fill="var(--gold)" stroke="var(--gold)" stroke-width="2"/>
+                    <text x="250" y="220" font-size="12" fill="var(--dark)" font-weight="600">≥ 0.75</text>
+                    <text x="340" y="220" font-size="12" fill="var(--dark)" font-weight="600">&lt; 0.75</text>
+
+                    <!-- Path 1: Success -->
+                    <line x1="250" y1="200" x2="150" y2="240" stroke="var(--primary-green)" stroke-width="2"/>
+                    <rect x="50" y="240" width="200" height="60" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="150" y="265" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">返回意圖</text>
+                    <text x="150" y="285" text-anchor="middle" font-size="11" fill="var(--dark)">跳過 LLM，進入 Step 4</text>
+
+                    <!-- Path 2: Fallback -->
+                    <line x1="350" y1="200" x2="450" y2="240" stroke="#FF9800" stroke-width="2"/>
+                    <rect x="350" y="80" width="250" height="160" rx="8" fill="rgba(255, 152, 0, 0.05)" stroke="#FF9800" stroke-width="2" style="display: none;" id="stage2"/>
+                    <rect x="350" y="240" width="200" height="80" rx="4" fill="rgba(255, 152, 0, 0.1)" stroke="#FF9800" stroke-width="2"/>
+                    <text x="450" y="265" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">階段 2: LLM</text>
+                    <text x="450" y="285" text-anchor="middle" font-size="11" fill="var(--dark)">GPT-4o mini 智能分類</text>
+                    <text x="450" y="305" text-anchor="middle" font-size="11" fill="var(--dark)">覆蓋: ~20% | 耗時: &lt;2s</text>
+
+                    <!-- Output -->
+                    <line x1="150" y1="300" x2="300" y2="340" stroke="var(--accent-green)" stroke-width="2"/>
+                    <line x1="450" y1="320" x2="300" y2="340" stroke="var(--accent-green)" stroke-width="2"/>
+                    <rect x="200" y="340" width="200" height="40" rx="4" fill="var(--accent-green)" opacity="0.2" stroke="var(--accent-green)" stroke-width="2"/>
+                    <text x="300" y="365" text-anchor="middle" font-size="14" font-weight="600" fill="var(--dark)">意圖 + 置信度 → Step 3.5</text>
+
+                    <!-- Arrow marker -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                            <polygon points="0 0, 10 5, 0 10" fill="var(--accent-green)"/>
+                        </marker>
+                    </defs>
+                </svg>
+
+                <h3>快速路徑詳解</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>意圖類型</th>
+                            <th>觸發關鍵詞</th>
+                            <th>正則模式</th>
+                            <th>置信度計算</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ORDER</strong></td>
+                            <td>訂單、單號、訂購、購買</td>
+                            <td><code>#\d{10,}</code></td>
+                            <td>關鍵詞 +0.5 | 正則 +0.5</td>
+                        </tr>
+                        <tr>
+                            <td><strong>STORE</strong></td>
+                            <td>門店、地點、地址、位置</td>
+                            <td><code>台北|台中|高雄</code></td>
+                            <td>關鍵詞 +0.4 | 位置 +0.6</td>
+                        </tr>
+                        <tr>
+                            <td><strong>STOCK</strong></td>
+                            <td>庫存、有沒有、現貨、補貨</td>
+                            <td><code>\d+ml|\d+mg</code></td>
+                            <td>關鍵詞 +0.6 | 產品 +0.4</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CARGO</strong></td>
+                            <td>物流、配送、發貨、跟蹤</td>
+                            <td><code>物流號|運單|ETA</code></td>
+                            <td>關鍵詞 +0.7 | 正則 +0.3</td>
+                        </tr>
+                        <tr>
+                            <td><strong>RETURN</strong></td>
+                            <td>退貨、換貨、退款、退除</td>
+                            <td><code>退\w+|換\w+</code></td>
+                            <td>關鍵詞 +0.8 | 理由分析 +0.2</td>
+                        </tr>
+                        <tr>
+                            <td><strong>COMPLAINT</strong></td>
+                            <td>投訴、問題、不滿、建議</td>
+                            <td><code>(?:很|非常)?(差|爛|糟)</code></td>
+                            <td>關鍵詞 +0.6 | 情緒 +0.4</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GENERAL</strong></td>
+                            <td>你好、謝謝、喜歡、推薦</td>
+                            <td><code>^(你好|Hi|嗨)</code></td>
+                            <td>默認 0.5 | 否定詞 -0.2</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>LLM 回退機制</h3>
+                <ul>
+                    <li><strong>觸發條件:</strong>
+                        <ul>
+                            <li>快速路徑置信度 &lt; 0.75</li>
+                            <li>快速路徑異常 (Regex 匹配失敗)</li>
+                            <li>3 次連續失敗後禁用快速路徑</li>
+                        </ul>
+                    </li>
+                    <li><strong>LLM 配置:</strong>
+                        <ul>
+                            <li>模型: GPT-4o mini (成本優化)</li>
+                            <li>溫度: 0.3 (確定性)</li>
+                            <li>超時: 2 秒</li>
+                        </ul>
+                    </li>
+                    <li><strong>失敗處理:</strong>
+                        <ul>
+                            <li>LLM 超時/錯誤 → 使用快速路徑最後已知結果</li>
+                            <li>兩者都失敗 → 默認為 GENERAL 意圖</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>性能指標</h3>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-title">快速路徑覆蓋率</div>
+                        <div class="card-content" style="font-size: 1.8rem; font-weight: 700; color: var(--primary-green);">~80%</div>
+                        <div class="card-content" style="font-size: 0.9rem;">日均 >8000 次調用</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">快速路徑延遲</div>
+                        <div class="card-content" style="font-size: 1.8rem; font-weight: 700; color: #4CAF50;">&lt;50ms</div>
+                        <div class="card-content" style="font-size: 0.9rem;">P99: &lt;100ms</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">LLM 召喚率</div>
+                        <div class="card-content" style="font-size: 1.8rem; font-weight: 700; color: #FF9800;">~20%</div>
+                        <div class="card-content" style="font-size: 0.9rem;">邊界案例 + 歧義消息</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">分類準確率</div>
+                        <div class="card-content" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">97.2%</div>
+                        <div class="card-content" style="font-size: 0.9rem;">驗證集 (n=5000)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: LLM Dual-Provider Fallback -->
+            <section id="llm-fallback" class="section highlight">
+                <h2>4. LLM 雙提供商回退 (NEW)</h2>
+                <p class="section-subtitle">自動故障轉移和提供商靈活性</p>
+
+                <h3>架構概覽</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        Step 5: 組裝完整提示詞
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step critical">
+                        查詢 LLM_PROVIDER_ORDER (預設: openai,anthropic)
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        嘗試主提供商 (OpenAI)
+                        <br><small>超時: 5 秒 | 重試: 1 次</small>
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        [成功] 返回回覆
+                    </div>
+                    <div style="text-align: center; color: #FF9800; margin: 0.5rem 0;">或</div>
+                    <div class="flow-step">
+                        [失敗/超時] 嘗試回退提供商 (Anthropic)
+                    </div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div class="flow-step">
+                        [兩者都失敗] 返回預寫回覆 (Fallback Text)
+                    </div>
+                </div>
+
+                <h3>提供商配置</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>屬性</th>
+                            <th>OpenAI</th>
+                            <th>Anthropic</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>模型</strong></td>
+                            <td>GPT-4o / GPT-4o mini</td>
+                            <td>claude-sonnet-4-20250514</td>
+                        </tr>
+                        <tr>
+                            <td><strong>優先級</strong></td>
+                            <td>1 (主提供商)</td>
+                            <td>2 (回退提供商)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>成本 (per 1K tokens)</strong></td>
+                            <td>Input: $0.005 | Output: $0.015</td>
+                            <td>Input: $0.003 | Output: $0.015</td>
+                        </tr>
+                        <tr>
+                            <td><strong>速度</strong></td>
+                            <td>~0.8s (avg)</td>
+                            <td>~1.2s (avg)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>可靠性</strong></td>
+                            <td>99.95%</td>
+                            <td>99.99%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>API 金鑰</strong></td>
+                            <td><code>OPENAI_API_KEY</code></td>
+                            <td><code>ANTHROPIC_API_KEY</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>故障轉移邏輯</h3>
+                <pre>def call_llm_with_fallback(prompt: str, intent: str):
+    providers = env("LLM_PROVIDER_ORDER").split(",")
+
+    for provider in providers:
+        try:
+            if provider == "openai":
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3,
+                    timeout=5
+                )
+                return response.choices[0].message.content
+
+            elif provider == "anthropic":
+                response = anthropic.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=1024,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3
+                )
+                return response.content[0].text
+
+        except (Timeout, APIError) as e:
+            logger.warning(f"{provider} failed: {e}")
+            continue
+
+        except Exception as e:
+            logger.error(f"{provider} critical error: {e}")
+            continue
+
+    # 所有提供商都失敗
+    logger.critical("All LLM providers failed")
+    return get_fallback_response(intent)</pre>
+
+                <h3>健康檢查端點</h3>
+                <ul>
+                    <li><strong>端點:</strong> <code>GET /health/llm</code></li>
+                    <li><strong>返回:</strong> JSON 對象，每個提供商的狀態</li>
+                    <li><strong>更新頻率:</strong> 每 5 分鐘</li>
+                </ul>
+                <pre>{
+  "timestamp": "2026-04-16T10:30:00Z",
+  "providers": {
+    "openai": {
+      "status": "healthy",
+      "latency_ms": 850,
+      "last_success": "2026-04-16T10:29:45Z",
+      "error_rate": 0.02
+    },
+    "anthropic": {
+      "status": "healthy",
+      "latency_ms": 1200,
+      "last_success": "2026-04-16T10:28:30Z",
+      "error_rate": 0.01
+    }
+  },
+  "primary_provider": "openai",
+  "fallback_provider": "anthropic"
+}</pre>
+
+                <h3>環境變數控制</h3>
+                <ul>
+                    <li><strong>LLM_PROVIDER_ORDER:</strong> 逗號分隔提供商列表 (預設: openai,anthropic)</li>
+                    <li><strong>允許值:</strong>
+                        <ul>
+                            <li><code>openai,anthropic</code> (預設)</li>
+                            <li><code>anthropic,openai</code> (反序)</li>
+                            <li><code>openai</code> (僅 OpenAI)</li>
+                            <li><code>anthropic</code> (僅 Anthropic)</li>
+                        </ul>
+                    </li>
+                    <li><strong>修改效果:</strong> 下一次啟動生效，無需重啟</li>
+                </ul>
+
+                <h3>監控和警報</h3>
+                <ul>
+                    <li><strong>監控指標:</strong>
+                        <ul>
+                            <li>各提供商成功率</li>
+                            <li>延遲分佈 (P50, P95, P99)</li>
+                            <li>故障轉移觸發次數</li>
+                            <li>預寫回覆使用率</li>
+                        </ul>
+                    </li>
+                    <li><strong>警報條件:</strong>
+                        <ul>
+                            <li>主提供商 5 分鐘內失敗率 &gt;5%</li>
+                            <li>故障轉移使用率 &gt;10%</li>
+                            <li>預寫回覆使用率 &gt;1%</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Section 5: Parallel Data Fetching -->
+            <section id="async-fetch" class="section highlight">
+                <h2>5. 並行數據抓取 (NEW)</h2>
+                <p class="section-subtitle">使用 asyncio.gather 實現高效的多源並發</p>
+
+                <h3>架構圖</h3>
+                <svg viewBox="0 0 700 350" style="width: 100%; max-width: 700px; margin: 1.5rem 0; background: #FAFAF8; border-radius: 8px; padding: 1rem;">
+                    <!-- Title -->
+                    <text x="350" y="25" text-anchor="middle" font-size="16" font-weight="700" fill="var(--primary-green)">ORDER 意圖 - 並行抓取示例</text>
+
+                    <!-- Input -->
+                    <rect x="250" y="40" width="200" height="35" rx="4" fill="var(--primary-green)" opacity="0.2" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="350" y="62" text-anchor="middle" font-size="13" font-weight="600" fill="var(--dark)">Step 4: 並行抓取</text>
+
+                    <!-- Parallel execution -->
+                    <line x1="350" y1="75" x2="150" y2="120" stroke="var(--accent-green)" stroke-width="2"/>
+                    <line x1="350" y1="75" x2="350" y2="120" stroke="var(--accent-green)" stroke-width="2"/>
+                    <line x1="350" y1="75" x2="550" y2="120" stroke="var(--accent-green)" stroke-width="2"/>
+
+                    <!-- Task 1: Shopline -->
+                    <rect x="50" y="120" width="200" height="120" rx="6" fill="rgba(97, 104, 83, 0.08)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="150" y="145" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">Shopline API</text>
+                    <text x="150" y="165" text-anchor="middle" font-size="11" fill="var(--dark)">• 訂單詳情</text>
+                    <text x="150" y="180" text-anchor="middle" font-size="11" fill="var(--dark)">• 收貨地址</text>
+                    <text x="150" y="195" text-anchor="middle" font-size="11" fill="var(--dark)">• 支付狀態</text>
+                    <text x="150" y="210" text-anchor="middle" font-size="10" fill="var(--accent-green)">超時: 3s</text>
+                    <text x="150" y="225" text-anchor="middle" font-size="10" fill="var(--accent-green)">耗時: ~600ms</text>
+
+                    <!-- Task 2: WMS -->
+                    <rect x="250" y="120" width="200" height="120" rx="6" fill="rgba(97, 104, 83, 0.08)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="350" y="145" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">WMS API</text>
+                    <text x="350" y="165" text-anchor="middle" font-size="11" fill="var(--dark)">• 倉庫狀態</text>
+                    <text x="350" y="180" text-anchor="middle" font-size="11" fill="var(--dark)">• 揀貨進度</text>
+                    <text x="350" y="195" text-anchor="middle" font-size="11" fill="var(--dark)">• 準備時間</text>
+                    <text x="350" y="210" text-anchor="middle" font-size="10" fill="var(--accent-green)">超時: 3s</text>
+                    <text x="350" y="225" text-anchor="middle" font-size="10" fill="var(--accent-green)">耗時: ~800ms</text>
+
+                    <!-- Task 3: Fulfillment -->
+                    <rect x="450" y="120" width="200" height="120" rx="6" fill="rgba(97, 104, 83, 0.08)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="550" y="145" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">物流系統</text>
+                    <text x="550" y="165" text-anchor="middle" font-size="11" fill="var(--dark)">• 物流號</text>
+                    <text x="550" y="180" text-anchor="middle" font-size="11" fill="var(--dark)">• 預計到達</text>
+                    <text x="550" y="195" text-anchor="middle" font-size="11" fill="var(--dark)">• 當前位置</text>
+                    <text x="550" y="210" text-anchor="middle" font-size="10" fill="var(--accent-green)">超時: 3s</text>
+                    <text x="550" y="225" text-anchor="middle" font-size="10" fill="var(--accent-green)">耗時: ~400ms</text>
+
+                    <!-- Convergence -->
+                    <line x1="150" y1="240" x2="350" y2="280" stroke="var(--accent-green)" stroke-width="2"/>
+                    <line x1="350" y1="240" x2="350" y2="280" stroke="var(--accent-green)" stroke-width="2"/>
+                    <line x1="550" y1="240" x2="350" y2="280" stroke="var(--accent-green)" stroke-width="2"/>
+
+                    <!-- Result -->
+                    <rect x="200" y="280" width="300" height="50" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="350" y="303" text-anchor="middle" font-size="13" font-weight="700" fill="var(--dark)">總耗時: max(600, 800, 400) = 800ms</text>
+                    <text x="350" y="322" text-anchor="middle" font-size="11" fill="var(--dark)">所有結果彙總 → Step 5 LLM 組裝</text>
+                </svg>
+
+                <h3>實現細節</h3>
+                <pre>import asyncio
+from typing import Dict, Any
+
+async def fetch_order_context(order_id: str) -> Dict[str, Any]:
+    """並行抓取訂單相關數據"""
+
+    async def fetch_shopline():
+        try:
+            return await shopline_client.get_order(order_id)
+        except Exception as e:
+            logger.error(f"Shopline fetch failed: {e}")
+            return {"error": str(e), "status": "failed"}
+
+    async def fetch_wms():
+        try:
+            return await wms_client.get_fulfillment_status(order_id)
+        except Exception as e:
+            logger.error(f"WMS fetch failed: {e}")
+            return {"error": str(e), "status": "failed"}
+
+    async def fetch_cargo():
+        try:
+            return await logistics_client.get_tracking(order_id)
+        except Exception as e:
+            logger.error(f"Logistics fetch failed: {e}")
+            return {"error": str(e), "status": "failed"}
+
+    # 並行執行所有任務
+    results = await asyncio.gather(
+        fetch_shopline(),
+        fetch_wms(),
+        fetch_cargo(),
+        return_exceptions=True  # 一個失敗不影響其他
+    )
+
+    shopline_data, wms_data, logistics_data = results
+
+    return {
+        "shopline": shopline_data,
+        "wms": wms_data,
+        "logistics": logistics_data,
+        "timestamp": datetime.now().isoformat()
+    }</pre>
+
+                <h3>按意圖分類的數據抓取</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>意圖</th>
+                            <th>數據源</th>
+                            <th>並行執行</th>
+                            <th>總超時</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ORDER</strong></td>
+                            <td>Shopline, WMS, 物流</td>
+                            <td>✓ asyncio.gather</td>
+                            <td>5s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>STORE</strong></td>
+                            <td>門店 API, 庫存查詢</td>
+                            <td>✓ asyncio.gather</td>
+                            <td>4s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>STOCK</strong></td>
+                            <td>WMS 庫存查詢</td>
+                            <td>- (單源)</td>
+                            <td>3s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CARGO</strong></td>
+                            <td>物流系統查詢</td>
+                            <td>- (單源)</td>
+                            <td>3s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>RETURN</strong></td>
+                            <td>Shopline, WMS</td>
+                            <td>✓ asyncio.gather</td>
+                            <td>4s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GENERAL</strong></td>
+                            <td>記憶 DB 查詢</td>
+                            <td>- (單源)</td>
+                            <td>2s</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>錯誤處理策略</h3>
+                <ul>
+                    <li><strong>隔離失敗:</strong> 一個數據源失敗不阻止其他源</li>
+                    <li><strong>降級響應:</strong> 缺失數據生成通用回覆</li>
+                    <li><strong>重試邏輯:</strong>
+                        <ul>
+                            <li>暫時故障 (超時): 1 次重試</li>
+                            <li>永久故障 (4xx): 不重試</li>
+                            <li>伺服器故障 (5xx): 最多 3 次重試 (指數退避)</li>
+                        </ul>
+                    </li>
+                    <li><strong>日誌記錄:</strong>
+                        <ul>
+                            <li>每個源的成功/失敗</li>
+                            <li>延遲測量</li>
+                            <li>錯誤詳情</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>性能最佳化</h3>
+                <ul>
+                    <li><strong>連接池:</strong> 每個 API 客戶端維護 HTTP 連接池 (10-50 個連接)</li>
+                    <li><strong>緩存:</strong> 5 分鐘內相同訂單 ID 的結果快取</li>
+                    <li><strong>批量請求:</strong> Shopline API 支援批量訂單查詢</li>
+                    <li><strong>定時清理:</strong> 過期快取每 1 小時清一次</li>
+                </ul>
+            </section>
+
+            <!-- Continue in next part due to token limit -->
+            <section id="handoff" class="section">
+                <h2>6. cs-handoff 模組</h2>
+                <p class="section-subtitle">智能人工轉接系統</p>
+
+                <h3>轉接信號檢測 (4 類型)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>信號類型</th>
+                            <th>觸發條件</th>
+                            <th>優先級</th>
+                            <th>示例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>EXPLICIT</strong></td>
+                            <td>明確的轉接請求</td>
+                            <td>P0</td>
+                            <td>"要人工客服"、"找經理"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>EMOTION</strong></td>
+                            <td>負面情感檢測</td>
+                            <td>P0 / P1</td>
+                            <td>投訴、沮喪、憤怒</td>
+                        </tr>
+                        <tr>
+                            <td><strong>HIGH_VALUE</strong></td>
+                            <td>高價值客戶交易</td>
+                            <td>P0 / P1</td>
+                            <td>訂單 &gt;$500、VIP 客戶</td>
+                        </tr>
+                        <tr>
+                            <td><strong>LOW_CONF</strong></td>
+                            <td>LLM 低置信度</td>
+                            <td>P1 / P2</td>
+                            <td>意圖置信度 &lt;0.5</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>狀態機</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">待處理 (Pending)</div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇ 已確認</div>
+                    <div class="flow-step">已確認 (Acknowledged)</div>
+                    <div style="text-align: center; color: var(--accent-green); margin: 0.5rem 0;">⬇</div>
+                    <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                        <div class="flow-step" style="flex: 1; text-align: center; border-color: #4CAF50;">已關閉 ✓</div>
+                        <div class="flow-step" style="flex: 1; text-align: center; border-color: #FF9800;">未接聽</div>
+                        <div class="flow-step" style="flex: 1; text-align: center; border-color: var(--dark);">已升級</div>
+                    </div>
+                </div>
+
+                <h3>提醒升級規則</h3>
+                <ul>
+                    <li><strong>第 1 階段 (T+0 min):</strong> 轉接工單創建，立即通知主顧問</li>
+                    <li><strong>第 2 階段 (T+5 min):</strong> 如未確認，通知次選顧問</li>
+                    <li><strong>第 3 階段 (T+15 min):</strong> 如未接取，發送客戶耐心消息 ("已等待 15 分鐘...")</li>
+                    <li><strong>第 4 階段 (T+30 min):</strong> 升級至店經理，再通知一次</li>
+                    <li><strong>第 5 階段 (T+60 min):</strong> 升級至 HQ，發送關鍵消息</li>
+                </ul>
+
+                <h3>客戶耐心消息</h3>
+                <ul>
+                    <li><strong>10 分鐘:</strong> "感謝您的耐心等待，我們正在為您安排最適合的顧問..."</li>
+                    <li><strong>25 分鐘:</strong> "很抱歉讓您久等，我們預計還需 5-10 分鐘..."</li>
+                    <li><strong>55 分鐘:</strong> "由於客流量大，建議您留下聯絡方式，我們會優先回撥您"</li>
+                </ul>
+            </section>
+
+            <!-- Section 7: Notification System -->
+            <section id="notification" class="section">
+                <h2>7. 通知系統 v2</h2>
+                <p class="section-subtitle">多渠道、優先級驅動的通知</p>
+
+                <h3>通知渠道 (4 種)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>渠道</th>
+                            <th>用途</th>
+                            <th>延遲</th>
+                            <th>可靠性</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>LINE Notify</strong></td>
+                            <td>P0/P1 客服告知</td>
+                            <td>&lt;1s</td>
+                            <td>99.9%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Slack (Block Kit)</strong></td>
+                            <td>團隊監控儀表板</td>
+                            <td>&lt;2s</td>
+                            <td>99.5%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Omnichat 標誌</strong></td>
+                            <td>系統內提醒</td>
+                            <td>&lt;500ms</td>
+                            <td>99.99%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email (SMTP)</strong></td>
+                            <td>P0 檔案記錄</td>
+                            <td>&lt;5s</td>
+                            <td>95%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>優先級路由</h3>
+                <ul>
+                    <li><strong>P0:</strong> LINE Notify + Slack + Omnichat + Email</li>
+                    <li><strong>P1:</strong> LINE Notify + Omnichat</li>
+                    <li><strong>P2:</strong> Omnichat 僅</li>
+                </ul>
+
+                <h3>自動重試</h3>
+                <ul>
+                    <li>指數退避: 1s, 2s, 4s</li>
+                    <li>最大重試: 2 次</li>
+                    <li>去重窗口: 5 分鐘 (同一通知不重複發送)</li>
+                </ul>
+            </section>
+
+            <!-- Section 8: Advisor Roster -->
+            <section id="advisor" class="section">
+                <h2>8. 顧問名冊 + HRM 集成 (NEW)</h2>
+                <p class="section-subtitle">動態顧問路由和可用性管理</p>
+
+                <h3>靜態回退名冊</h3>
+                <ul>
+                    <li><strong>台北門店:</strong> 3 名顧問 + 1 名經理</li>
+                    <li><strong>台中門店:</strong> 3 名顧問 + 1 名經理</li>
+                    <li><strong>高雄門店:</strong> 2 名顧問 + 1 名經理</li>
+                    <li><strong>HQ 客服中心:</strong> 5 名全職顧問</li>
+                </ul>
+
+                <h3>HRM API 集成</h3>
+                <ul>
+                    <li><strong>端點:</strong> HRM_API_URL (環境變數配置)</li>
+                    <li><strong>認證:</strong> Bearer Token (HRM_API_KEY)</li>
+                    <li><strong>快取:</strong> 5 分鐘 TTL (HRM_CACHE_TTL)</li>
+                    <li><strong>查詢項目:</strong> 顧問狀態、工作時段、技能標籤</li>
+                </ul>
+
+                <h3>4 層路由策略</h3>
+                <ol>
+                    <li><strong>偏好門店:</strong> 客戶所在城市的首選門店</li>
+                    <li><strong>最近開放:</strong> 若首選門店無可用顧問，選擇最近的開放門店</li>
+                    <li><strong>HQ 轉接:</strong> 若所有門店均滿，轉接至 HQ 客服中心</li>
+                    <li><strong>離線隊列:</strong> 若 HQ 也滿，創建待機轉接工單，待首個顧問可用時立即分配</li>
+                </ol>
+            </section>
+
+            <!-- Section 9: Persistence Layer -->
+            <section id="persistence" class="section highlight">
+                <h2>9. 持久化層 (NEW)</h2>
+                <p class="section-subtitle">靈活的存儲抽象層</p>
+
+                <h3>HandoffStore 架構</h3>
+                <pre>from abc import ABC, abstractmethod
+
+class HandoffStore(ABC):
+    """轉接數據存儲抽象基類"""
+
+    @abstractmethod
+    async def create_handoff(self, handoff_id: str, data: dict) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_handoff(self, handoff_id: str) -> dict:
+        pass
+
+    @abstractmethod
+    async def update_handoff(self, handoff_id: str, updates: dict) -> bool:
+        pass
+
+    @abstractmethod
+    async def list_pending(self, limit: int = 100) -> list:
+        pass
+
+
+class MemoryStore(HandoffStore):
+    """開發/測試用內存存儲"""
+    def __init__(self):
+        self.data = {}
+    # ... 實現略
+
+
+class D1Store(HandoffStore):
+    """Cloudflare D1 生產存儲"""
+    def __init__(self, cf_account_id, cf_api_token, cf_d1_database_id):
+        self.client = CloudflareD1Client(...)
+    # ... 實現略</pre>
+
+                <h3>存儲選項</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>存儲類型</th>
+                            <th>環境</th>
+                            <th>特點</th>
+                            <th>成本</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>MemoryStore</strong></td>
+                            <td>開發 / 測試</td>
+                            <td>零依賴、快速、重啟丟失</td>
+                            <td>免費</td>
+                        </tr>
+                        <tr>
+                            <td><strong>D1Store</strong></td>
+                            <td>生產</td>
+                            <td>持久化、可擴展、內建備份</td>
+                            <td>$0.75/月</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>環境配置</h3>
+                <ul>
+                    <li><strong>HANDOFF_STORE_BACKEND:</strong> memory | d1 (預設: d1)</li>
+                    <li><strong>CF_ACCOUNT_ID:</strong> Cloudflare 賬戶 ID</li>
+                    <li><strong>CF_API_TOKEN:</strong> Cloudflare API Token</li>
+                    <li><strong>CF_D1_DATABASE_ID:</strong> D1 數據庫 ID</li>
+                </ul>
+
+                <h3>自動 Schema 創建</h3>
+                <ul>
+                    <li>啟動時自動檢查 D1 數據庫 Schema</li>
+                    <li>如表不存在，自動創建 <code>handoffs</code> 表</li>
+                    <li>字段: id, created_at, updated_at, status, data (JSON)</li>
+                </ul>
+            </section>
+
+            <!-- Section 10: Celery/Redis Queue -->
+            <section id="celery" class="section highlight">
+                <h2>10. Celery/Redis 隊列 (NEW)</h2>
+                <p class="section-subtitle">分佈式任務隊列</p>
+
+                <h3>架構</h3>
+                <ul>
+                    <li><strong>Broker:</strong> Redis (CELERY_BROKER_URL)</li>
+                    <li><strong>Backend:</strong> Redis (CELERY_RESULT_BACKEND)</li>
+                    <li><strong>任務:</strong> 提醒升級、通知發送</li>
+                    <li><strong>向後兼容:</strong> USE_CELERY=false 時回退至 threading.Timer</li>
+                </ul>
+
+                <h3>配置</h3>
+                <ul>
+                    <li><strong>USE_CELERY:</strong> true | false (預設: false)</li>
+                    <li><strong>CELERY_BROKER_URL:</strong> redis://localhost:6379/0</li>
+                    <li><strong>CELERY_RESULT_BACKEND:</strong> redis://localhost:6379/0</li>
+                </ul>
+            </section>
+
+            <!-- Section 11: Security -->
+            <section id="security" class="section">
+                <h2>11. 安全性 (cs-guard)</h2>
+                <p class="section-subtitle">數據保護和審計</p>
+
+                <h3>防護措施</h3>
+                <ul>
+                    <li><strong>GET-only 白名單:</strong> Shopline / WMS 僅允許讀取操作</li>
+                    <li><strong>PII 遮蔽:</strong> 解密後立即遮蔽身分證、電話號碼</li>
+                    <li><strong>審計日誌:</strong> JSONL 格式記錄所有關鍵操作</li>
+                    <li><strong>啟動檢查:</strong> ENV=production + LLM_MODE=mock → RuntimeError</li>
+                </ul>
+            </section>
+
+            <!-- Section 12: Testing -->
+            <section id="testing" class="section">
+                <h2>12. 測試覆蓋率</h2>
+                <p class="section-subtitle">完整的自動化測試套件</p>
+
+                <div class="test-chart">
+                    <div class="test-item">
+                        <div class="test-item-number">20</div>
+                        <div class="test-item-label">單元測試</div>
+                        <div class="test-item-status">✓ 全部通過</div>
+                    </div>
+                    <div class="test-item">
+                        <div class="test-item-number">24</div>
+                        <div class="test-item-label">轉接測試</div>
+                        <div class="test-item-status">✓ 全部通過</div>
+                    </div>
+                    <div class="test-item">
+                        <div class="test-item-number">24</div>
+                        <div class="test-item-label">場景測試</div>
+                        <div class="test-item-status">✓ 全部通過</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 2rem 0;">
+                    <div style="font-size: 2rem; font-weight: 700; color: #4CAF50; margin-bottom: 0.5rem;">68 / 68</div>
+                    <div style="font-size: 1.1rem; color: var(--dark); font-weight: 600;">完整測試覆蓋率</div>
+                </div>
+            </section>
+
+            <!-- Section 13: Environment Variables -->
+            <section id="env-vars" class="section">
+                <h2>13. 環境變數參考表</h2>
+                <p class="section-subtitle">完整的環境配置清單</p>
+
+                <h3>LLM 和 API 認證</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>變數名</th>
+                            <th>說明</th>
+                            <th>示例值</th>
+                            <th>必需</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>OPENAI_API_KEY</code></td>
+                            <td>OpenAI API 金鑰</td>
+                            <td>sk-...</td>
+                            <td>✓</td>
+                        </tr>
+                        <tr>
+                            <td><code>ANTHROPIC_API_KEY</code></td>
+                            <td>Anthropic API 金鑰</td>
+                            <td>sk-ant-...</td>
+                            <td>✓</td>
+                        </tr>
+                        <tr>
+                            <td><code>LLM_MODE</code></td>
+                            <td>LLM 模式 (mock/real)</td>
+                            <td>real</td>
+                            <td>✗</td>
+                        </tr>
+                        <tr>
+                            <td><code>LLM_PROVIDER_ORDER</code></td>
+                            <td>提供商優先級順序</td>
+                            <td>openai,anthropic</td>
+                            <td>✗</td>
+                        </tr>
+                        <tr>
+                            <td><code>HRM_API_KEY</code></td>
+                            <td>HRM 系統 API 金鑰</td>
+                            <td>token_...</td>
+                            <td>✓</td>
+                        </tr>
+                        <tr>
+                            <td><code>HRM_API_URL</code></td>
+                            <td>HRM API 端點</td>
+                            <td>https://hrm.example.com/api</td>
+                            <td>✓</td>
+                        </tr>
+                        <tr>
+                            <td><code>OMNICHAT_API_KEY</code></td>
+                            <td>Omnichat 認證金鑰</td>
+                            <td>omni_...</td>
+                            <td>✓</td>
+                        </tr>
+                        <tr>
+                            <td><code>OMNICHAT_BASE_URL</code></td>
+                            <td>Omnichat API 基礎 URL</td>
+                            <td>https://api.omnichat.com</td>
+                            <td>✓</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Celery 和 Redis</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>變數名</th>
+                            <th>說明</th>
+                            <th>預設值</th>
+                            <th>環境</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>USE_CELERY</code></td>
+                            <td>啟用 Celery 隊列</td>
+                            <td>false</td>
+                            <td>開發/生產</td>
+                        </tr>
+                        <tr>
+                            <td><code>CELERY_BROKER_URL</code></td>
+                            <td>Celery Broker URL</td>
+                            <td>redis://localhost:6379/0</td>
+                            <td>生產</td>
+                        </tr>
+                        <tr>
+                            <td><code>CELERY_RESULT_BACKEND</code></td>
+                            <td>Celery 結果存儲</td>
+                            <td>redis://localhost:6379/1</td>
+                            <td>生產</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>通知和通信</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>變數名</th>
+                            <th>說明</th>
+                            <th>值類型</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>LINE_NOTIFY_TOKEN</code></td>
+                            <td>LINE 通知預設 Token</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>LINE_NOTIFY_TAICHUNG</code></td>
+                            <td>台中門店通知 Token</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>LINE_NOTIFY_TAIPEI</code></td>
+                            <td>台北門店通知 Token</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>LINE_NOTIFY_KAOHSIUNG</code></td>
+                            <td>高雄門店通知 Token</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>LINE_NOTIFY_HQ</code></td>
+                            <td>HQ 客服中心通知 Token</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>SLACK_HANDOFF_WEBHOOK</code></td>
+                            <td>Slack 轉接通知 Webhook</td>
+                            <td>string (URL)</td>
+                        </tr>
+                        <tr>
+                            <td><code>SMTP_HOST</code></td>
+                            <td>SMTP 伺服器地址</td>
+                            <td>string</td>
+                        </tr>
+                        <tr>
+                            <td><code>SMTP_PORT</code></td>
+                            <td>SMTP 伺服器端口</td>
+                            <td>int (587 或 465)</td>
+                        </tr>
+                        <tr>
+                            <td><code>SMTP_USER</code></td>
+                            <td>SMTP 用戶名</td>
+                            <td>string (email)</td>
+                        </tr>
+                        <tr>
+                            <td><code>SMTP_PASS</code></td>
+                            <td>SMTP 密碼</td>
+                            <td>string</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>存儲和持久化</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>變數名</th>
+                            <th>說明</th>
+                            <th>預設值</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>HANDOFF_STORE_BACKEND</code></td>
+                            <td>轉接數據存儲後端</td>
+                            <td>d1</td>
+                        </tr>
+                        <tr>
+                            <td><code>CF_ACCOUNT_ID</code></td>
+                            <td>Cloudflare 賬戶 ID</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>CF_API_TOKEN</code></td>
+                            <td>Cloudflare API Token</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>CF_D1_DATABASE_ID</code></td>
+                            <td>D1 數據庫 ID</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>HRM_CACHE_TTL</code></td>
+                            <td>HRM 快取過期時間 (秒)</td>
+                            <td>300</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>系統配置</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>變數名</th>
+                            <th>說明</th>
+                            <th>允許值</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>ENV</code></td>
+                            <td>運行環境</td>
+                            <td>development, staging, production</td>
+                        </tr>
+                        <tr>
+                            <td><code>MESSAGE_DEBOUNCE_SEC</code></td>
+                            <td>消息去重窗口 (秒)</td>
+                            <td>1.5 (推薦)</td>
+                        </tr>
+                        <tr>
+                            <td><code>INTENT_FAST_PATH_CONFIDENCE</code></td>
+                            <td>快速路徑置信度閾值</td>
+                            <td>0.75 (推薦)</td>
+                        </tr>
+                        <tr>
+                            <td><code>HQ_OPEN_HOUR</code></td>
+                            <td>HQ 營業開始時間 (24h)</td>
+                            <td>9</td>
+                        </tr>
+                        <tr>
+                            <td><code>HQ_CLOSE_HOUR</code></td>
+                            <td>HQ 營業結束時間 (24h)</td>
+                            <td>21</td>
+                        </tr>
+                        <tr>
+                            <td><code>HANDOFF_REMIND_ENABLED</code></td>
+                            <td>啟用轉接提醒</td>
+                            <td>true | false</td>
+                        </tr>
+                        <tr>
+                            <td><code>NOTIFY_MAX_RETRIES</code></td>
+                            <td>通知最大重試次數</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section 14: Deployment -->
+            <section id="deployment" class="section">
+                <h2>14. 部署架構</h2>
+                <p class="section-subtitle">完整的系統基礎設施</p>
+
+                <h3>技術棧</h3>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-title">API 伺服器</div>
+                        <div class="card-content">
+                            <strong>Railway</strong><br>
+                            FastAPI + uvicorn<br>
+                            <code>8 GB RAM | 2 vCPU</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">數據庫</div>
+                        <div class="card-content">
+                            <strong>Cloudflare D1</strong><br>
+                            SQLite 託管<br>
+                            <code>10 GB 存儲</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">任務隊列</div>
+                        <div class="card-content">
+                            <strong>Redis</strong><br>
+                            Celery Broker<br>
+                            <code>1 GB 快取</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">消息入口</div>
+                        <div class="card-content">
+                            <strong>Make.com</strong><br>
+                            Webhook 路由<br>
+                            <code>/chat 端點</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">消息出口</div>
+                        <div class="card-content">
+                            <strong>LINE Messaging API</strong><br>
+                            Omnichat 集成<br>
+                            <code>Reply Token</code>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">監控</div>
+                        <div class="card-content">
+                            <strong>Railway Logs</strong><br>
+                            Slack 告警<br>
+                            <code>實時儀表板</code>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>數據流拓撲</h3>
+                <svg viewBox="0 0 800 500" style="width: 100%; max-width: 800px; margin: 2rem 0; background: #FAFAF8; border-radius: 8px; padding: 1rem;">
+                    <!-- External sources -->
+                    <text x="50" y="30" font-size="14" font-weight="700" fill="var(--dark)">外部系統</text>
+
+                    <rect x="20" y="50" width="130" height="60" rx="4" fill="rgba(97, 104, 83, 0.1)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="85" y="80" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">LINE API</text>
+                    <text x="85" y="100" text-anchor="middle" font-size="10" fill="var(--dark)">客戶消息</text>
+
+                    <rect x="170" y="50" width="130" height="60" rx="4" fill="rgba(97, 104, 83, 0.1)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="235" y="80" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Omnichat</text>
+                    <text x="235" y="100" text-anchor="middle" font-size="10" fill="var(--dark)">多渠道</text>
+
+                    <rect x="320" y="50" width="130" height="60" rx="4" fill="rgba(97, 104, 83, 0.1)" stroke="var(--primary-green)" stroke-width="2"/>
+                    <text x="385" y="80" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Make.com</text>
+                    <text x="385" y="100" text-anchor="middle" font-size="10" fill="var(--dark)">Webhook</text>
+
+                    <!-- Central Railway -->
+                    <text x="650" y="30" font-size="14" font-weight="700" fill="var(--dark)">核心系統</text>
+
+                    <rect x="620" y="50" width="150" height="100" rx="6" fill="rgba(209, 184, 149, 0.15)" stroke="var(--gold)" stroke-width="2"/>
+                    <text x="695" y="80" text-anchor="middle" font-size="13" font-weight="700" fill="var(--primary-green)">Railway</text>
+                    <text x="695" y="100" text-anchor="middle" font-size="11" fill="var(--dark)">FastAPI</text>
+                    <text x="695" y="115" text-anchor="middle" font-size="11" fill="var(--dark)">cs-brain</text>
+                    <text x="695" y="130" text-anchor="middle" font-size="11" fill="var(--dark)">cs-handoff</text>
+                    <text x="695" y="145" text-anchor="middle" font-size="10" fill="var(--accent-green)">+ 7 個技能</text>
+
+                    <!-- Data layer -->
+                    <text x="50" y="250" font-size="14" font-weight="700" fill="var(--dark)">數據層</text>
+
+                    <rect x="20" y="270" width="100" height="70" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="70" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">D1</text>
+                    <text x="70" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">Cloudflare</text>
+                    <text x="70" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">持久化</text>
+
+                    <rect x="145" y="270" width="100" height="70" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="195" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Redis</text>
+                    <text x="195" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">Celery</text>
+                    <text x="195" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">隊列</text>
+
+                    <!-- External APIs -->
+                    <text x="400" y="250" font-size="14" font-weight="700" fill="var(--dark)">外部服務</text>
+
+                    <rect x="350" y="270" width="100" height="70" rx="4" fill="rgba(255, 152, 0, 0.1)" stroke="#FF9800" stroke-width="2"/>
+                    <text x="400" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Shopline</text>
+                    <text x="400" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">訂單</text>
+                    <text x="400" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">管理</text>
+
+                    <rect x="470" y="270" width="100" height="70" rx="4" fill="rgba(255, 152, 0, 0.1)" stroke="#FF9800" stroke-width="2"/>
+                    <text x="520" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">WMS</text>
+                    <text x="520" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">倉庫</text>
+                    <text x="520" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">系統</text>
+
+                    <rect x="590" y="270" width="100" height="70" rx="4" fill="rgba(255, 152, 0, 0.1)" stroke="#FF9800" stroke-width="2"/>
+                    <text x="640" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">物流</text>
+                    <text x="640" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">追蹤</text>
+                    <text x="640" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">系統</text>
+
+                    <rect x="710" y="270" width="80" height="70" rx="4" fill="rgba(255, 152, 0, 0.1)" stroke="#FF9800" stroke-width="2"/>
+                    <text x="750" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">HRM</text>
+                    <text x="750" y="315" text-anchor="middle" font-size="10" fill="var(--dark)">顧問</text>
+                    <text x="750" y="330" text-anchor="middle" font-size="10" fill="var(--dark)">資源</text>
+
+                    <!-- Notifications -->
+                    <text x="50" y="420" font-size="14" font-weight="700" fill="var(--dark)">通知輸出</text>
+
+                    <rect x="20" y="440" width="100" height="50" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="70" y="468" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">LINE</text>
+                    <text x="70" y="483" text-anchor="middle" font-size="10" fill="var(--dark)">通知</text>
+
+                    <rect x="135" y="440" width="100" height="50" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="185" y="468" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Slack</text>
+                    <text x="185" y="483" text-anchor="middle" font-size="10" fill="var(--dark)">告警</text>
+
+                    <rect x="250" y="440" width="100" height="50" rx="4" fill="rgba(76, 175, 80, 0.1)" stroke="#4CAF50" stroke-width="2"/>
+                    <text x="300" y="468" text-anchor="middle" font-size="12" font-weight="600" fill="var(--dark)">Email</text>
+                    <text x="300" y="483" text-anchor="middle" font-size="10" fill="var(--dark)">記錄</text>
+
+                    <!-- Arrows -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                            <polygon points="0 0, 10 5, 0 10" fill="var(--accent-green)"/>
+                        </marker>
+                    </defs>
+
+                    <line x1="85" y1="110" x2="695" y2="80" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="235" y1="110" x2="695" y2="100" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="385" y1="110" x2="695" y2="120" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <line x1="695" y1="150" x2="70" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="195" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="400" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="520" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="640" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="750" y2="270" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <line x1="70" y1="340" x2="70" y2="440" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="195" y1="340" x2="185" y2="440" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="695" y1="150" x2="300" y2="440" stroke="var(--accent-green)" stroke-width="2" marker-end="url(#arrow)"/>
+                </svg>
+
+                <h3>部署步驟</h3>
+                <ol>
+                    <li><strong>準備環境變數:</strong> 設置所有 Section 13 中列出的環境變數</li>
+                    <li><strong>初始化數據庫:</strong> Railway 啟動時自動創建 D1 Schema</li>
+                    <li><strong>部署應用:</strong> <code>railway deploy</code></li>
+                    <li><strong>設置 Webhook:</strong> Make.com 配置 POST /chat 端點</li>
+                    <li><strong>測試連接:</strong> 發送測試消息驗證端到端流程</li>
+                    <li><strong>監控上線:</strong> 檢查日誌，驗證所有模組正常運行</li>
+                </ol>
+
+                <h3>高可用性配置</h3>
+                <ul>
+                    <li><strong>Railway 自動重啟:</strong> 故障時自動重新部署</li>
+                    <li><strong>D1 自動備份:</strong> 每日備份，30 天保留期</li>
+                    <li><strong>Redis 哨兵:</strong> Redis Sentinel 管理故障轉移</li>
+                    <li><strong>應用健康檢查:</strong> <code>GET /health</code> 端點每 30 秒檢查一次</li>
+                </ul>
+            </section>
+
+            <!-- Footer -->
+            <div style="background: var(--white); padding: 2rem; border-radius: 8px; margin-top: 3rem; border-top: 2px solid var(--gold);">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 1rem;">文件信息</h3>
+                    <table style="width: 100%; font-size: 0.9rem;">
+                        <tr>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;"><strong>系統:</strong></td>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;">LoveFu AI 輔睡員</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;"><strong>版本:</strong></td>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;">v2.2.0</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;"><strong>品牌:</strong></td>
+                            <td style="padding: 0.5rem 0; border-bottom: 1px solid #E8E5DB;">CIS × LoveFu</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0.5rem 0;"><strong>最後更新:</strong></td>
+                            <td style="padding: 0.5rem 0;">2026-04-16</td>
+                        </tr>
+                    </table>
+                    <p style="color: var(--accent-green); font-size: 0.85rem; margin-top: 1.5rem; text-align: center;">
+                        © 2026 LoveFu | CIS-branded | Traditional Chinese (繁體中文)
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar navigation highlighting
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-nav a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Collapsible sections
+        document.querySelectorAll('.collapsible').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                if (content && content.classList.contains('collapse-content')) {
+                    content.classList.toggle('show');
+                }
+            });
+        });
+
+        // Smooth scroll for sidebar
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Update sidebar active on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.sidebar-nav a');
+
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 150) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`a[href="#${section.id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

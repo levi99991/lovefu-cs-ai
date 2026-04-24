@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>大島樂眠｜AI 輔睡員效成儀表板</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ==== LoveFu CIS 2026 ==== */
+  :root {
+    --lf-deep: #616853;     /* 深綠 主色 */
+    --lf-light: #90A086;    /* 淺綠 輔色 */
+    --lf-gold: #D1B895;     /* 金沙 點綴 */
+    --lf-brown: #5B4345;    /* 焙茶棕 文字 */
+    --lf-bg: #F7F5EF;       /* 米灰底 */
+    --lf-card: #FFFFFF;
+    --lf-danger: #C75450;
+    --lf-warn:   #D89D3B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans TC", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--lf-bg);
+    color: var(--lf-brown);
+    line-height: 1.6;
+    padding: 24px;
+  }
+  header {
+    background: linear-gradient(135deg, var(--lf-deep) 0%, var(--lf-light) 100%);
+    color: #fff;
+    padding: 32px 40px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(97,104,83,.15);
+  }
+  header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }
+  header .meta { font-size: 13px; opacity: .9; }
+  header .badge {
+    display: inline-block;
+    background: rgba(209,184,149,.35);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 8px;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--lf-card);
+    padding: 6px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    overflow-x: auto;
+  }
+  nav.tabs button {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--lf-brown);
+    cursor: pointer;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: all .2s;
+  }
+  nav.tabs button:hover { background: var(--lf-bg); }
+  nav.tabs button.active {
+    background: var(--lf-deep);
+    color: #fff;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--lf-card);
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    border-left: 4px solid var(--lf-deep);
+  }
+  .kpi.gold    { border-left-color: var(--lf-gold); }
+  .kpi.danger  { border-left-color: var(--lf-danger); }
+  .kpi.warn    { border-left-color: var(--lf-warn); }
+  .kpi-label   { font-size: 12px; color: var(--lf-light); font-weight: 500; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .kpi-value   { font-size: 32px; font-weight: 700; color: var(--lf-deep); line-height: 1; }
+  .kpi-value.danger { color: var(--lf-danger); }
+  .kpi-value.warn   { color: var(--lf-warn); }
+  .kpi-sub     { font-size: 12px; color: var(--lf-brown); opacity: .7; margin-top: 6px; }
+
+  .card {
+    background: var(--lf-card);
+    padding: 24px 28px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--lf-deep);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eae6dc;
+  }
+  .card .hint { font-size: 12px; color: var(--lf-light); margin-bottom: 12px; }
+
+  .funnel {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .funnel-stage {
+    flex: 1;
+    padding: 18px 12px;
+    background: var(--lf-light);
+    color: #fff;
+    text-align: center;
+    position: relative;
+  }
+  .funnel-stage:nth-child(1) { background: #616853; }
+  .funnel-stage:nth-child(2) { background: #758059; }
+  .funnel-stage:nth-child(3) { background: #90A086; }
+  .funnel-stage:nth-child(4) { background: #A8B598; }
+  .funnel-stage:nth-child(5) { background: #D1B895; color: #5B4345; }
+  .funnel-stage .n    { font-size: 24px; font-weight: 700; }
+  .funnel-stage .lbl  { font-size: 11px; opacity: .95; margin-top: 2px; }
+  .funnel-stage .rate { font-size: 11px; opacity: .85; margin-top: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--lf-light);
+    padding: 10px 12px;
+    border-bottom: 2px solid #eae6dc;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f2efe7;
+  }
+  table tr:hover td { background: var(--lf-bg); }
+  .chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .chip.ok      { background: #E4EBE0; color: var(--lf-deep); }
+  .chip.danger  { background: #F7E0DE; color: var(--lf-danger); }
+  .chip.warn    { background: #F9ECD5; color: var(--lf-warn); }
+  .chip.gray    { background: #EEE; color: #666; }
+
+  .chart-box { height: 280px; position: relative; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 880px) { .two-col { grid-template-columns: 1fr; } }
+
+  .data-banner {
+    background: var(--lf-gold);
+    color: var(--lf-brown);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .data-banner.live { background: #E4EBE0; color: var(--lf-deep); }
+
+  code {
+    background: var(--lf-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--lf-deep);
+  }
+  footer {
+    text-align: center;
+    color: var(--lf-light);
+    font-size: 11px;
+    padding: 24px 0 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>大島樂眠｜AI 輔睡員效成儀表板 <span class="badge" id="modeBadge">Demo 模式</span></h1>
+  <div class="meta">
+    資料截止：<span id="lastUpdated">2026-04-15 14:00</span> ｜
+    資料來源：<span id="dataSource">內建範例（未接 D1）</span>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="active" data-tab="overview">總覽</button>
+  <button data-tab="funnel">追客漏斗</button>
+  <button data-tab="advisor">門市 × 輔睡員</button>
+  <button data-tab="audit">安全審計</button>
+  <button data-tab="alerts">告警 &amp; 異常</button>
+</nav>
+
+<!-- ================= Tab 1：總覽 ================= -->
+<section class="tab-panel active" id="tab-overview">
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">過 24 小時對話</div>
+      <div class="kpi-value" id="kpi-chats">—</div>
+      <div class="kpi-sub" id="kpi-chats-sub">AI 回覆 + Omnichat 靜默</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-label">追客 Lead 總數</div>
+      <div class="kpi-value" id="kpi-leads">—</div>
+      <div class="kpi-sub" id="kpi-leads-sub">門市試躺登記</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">LINE 綁定率</div>
+      <div class="kpi-value" id="kpi-bind">—</div>
+      <div class="kpi-sub">QR 掃描 + 加好友</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">7 日成單轉換</div>
+      <div class="kpi-value" id="kpi-conv">—</div>
+      <div class="kpi-sub">Lead → 訂單</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">AI 攔截次數</div>
+      <div class="kpi-value warn" id="kpi-blocked">—</div>
+      <div class="kpi-sub">cs-guard 擋下</div>
+    </div>
+    <div class="kpi danger">
+      <div class="kpi-label">待人工處理</div>
+      <div class="kpi-value danger" id="kpi-human">—</div>
+      <div class="kpi-sub">轉人工客服</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>過 24 小時 API 呼叫趨勢</h2>
+      <div class="hint">資料來源：Cloudflare D1 · <code>audit_log</code> Q5</div>
+      <div class="chart-box"><canvas id="chartHourly"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>意圖分佈（7 日）</h2>
+      <div class="hint">從對話記憶 <code>last_intent</code> 聚合</div>
+      <div class="chart-box"><canvas id="chartIntent"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Tab 2：追客漏斗 ================= -->
+<section class="tab-panel" id="tab-funnel">
+  <div class="card">
+    <h2>30 日追客漏斗（門市試躺 → 成單）</h2>
+    <div class="hint">5 階段 cadence：S0 首問 → S1 24h → S2 3d → S3 7d → S4 14d</div>
+    <div class="funnel" id="funnelStages"></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>各階段發送量</h2>
+      <div class="chart-box"><canvas id="chartStages"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>安全上限監控</h2>
+      <table>
+        <tr><td>14 日內 ≥5 則</td><td style="text-align:right"><span class="chip danger" id="safetyOver5">—</span></td></tr>
+        <tr><td>封鎖後已自動暫停</td><td style="text-align:right"><span class="chip ok" id="safetyPaused">—</span></td></tr>
+        <tr><td>明示拒絕追客</td><td style="text-align:right"><span class="chip warn" id="safetyOptout">—</span></td></tr>
+        <tr><td>真人確認通過率</td><td style="text-align:right"><span class="chip ok" id="safetyReview">—</span></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Tab 3：門市 × 輔睡員 ================= -->
+<section class="tab-panel" id="tab-advisor">
+  <div class="card">
+    <h2>門市 × 輔睡員 30 日排行榜</h2>
+    <div class="hint">依成單轉換率排序；資料由 cs-instore 狀態彙整</div>
+    <table id="advisorTable">
+      <thead>
+        <tr>
+          <th>門市</th>
+          <th>輔睡員</th>
+          <th style="text-align:right">Lead</th>
+          <th style="text-align:right">已綁定</th>
+          <th style="text-align:right">成單</th>
+          <th style="text-align:right">轉換率</th>
+          <th>狀態</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= Tab 4：安全審計 ================= -->
+<section class="tab-panel" id="tab-audit">
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">7 日總呼叫</div>
+      <div class="kpi-value" id="audit-total">—</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">被攔截</div>
+      <div class="kpi-value warn" id="audit-blocked">—</div>
+    </div>
+    <div class="kpi danger">
+      <div class="kpi-label">錯誤 (4xx/5xx)</div>
+      <div class="kpi-value danger" id="audit-errors">—</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-label">傳輸資料量</div>
+      <div class="kpi-value" id="audit-bytes" style="font-size:24px">—</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>攔截原因分佈（7 日）</h2>
+      <div class="hint">查詢 Q2 · 依 <code>block_reason</code> 分組</div>
+      <div class="chart-box"><canvas id="chartBlockReason"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Caller 呼叫比例</h2>
+      <div class="hint">cs-shopline / cs-logistics / unknown</div>
+      <div class="chart-box"><canvas id="chartCaller"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>每日 Caller 呼叫量（堆疊）</h2>
+    <div class="chart-box" style="height:260px"><canvas id="chartCallerDaily"></canvas></div>
+  </div>
+</section>
+
+<!-- ================= Tab 5：告警 ================= -->
+<section class="tab-panel" id="tab-alerts">
+  <div class="card">
+    <h2>異常回應 / 攔截事件（最近 50 筆）</h2>
+    <div class="hint">查詢 Q4 · 回應 &gt; 512KB 或 4xx/5xx 未攔截</div>
+    <table id="alertTable">
+      <thead>
+        <tr>
+          <th>時間</th>
+          <th>Caller</th>
+          <th>端點</th>
+          <th style="text-align:right">狀態</th>
+          <th style="text-align:right">大小</th>
+          <th>原因</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  大島樂眠 LoveFu · AI 輔睡員 v2.0 · Built with Claude Code<br>
+  來源：Cloudflare D1 audit_log + cs-instore 記憶體狀態 + cs-memory last_intent
+</footer>
+
+<!-- ================================================================
+     資料注入點 — generate_dashboard.py 會以完整真實資料覆蓋此 <script>
+     ================================================================ -->
+<script id="dashboard-data" type="application/json">
+{
+  "mode": "demo",
+  "last_updated": "2026-04-15 14:00",
+  "source": "內建範例（未接 D1）",
+  "kpi": {
+    "chats_24h": 342,
+    "chats_ai": 278,
+    "chats_silent": 64,
+    "leads_total": 128,
+    "leads_new_7d": 31,
+    "bind_rate": 62.5,
+    "conv_rate": 12.5,
+    "blocked_24h": 4,
+    "human_24h": 7
+  },
+  "hourly": {
+    "labels": ["00","02","04","06","08","10","12","14","16","18","20","22"],
+    "calls":  [8, 3, 1, 2, 14, 28, 45, 52, 48, 61, 42, 18]
+  },
+  "intent": {
+    "labels": ["SLEEP","PRODUCT","CARGO","ORDER","STORE","RETURN","CHAT","MEMBER","STOCK","COMPLAINT"],
+    "counts": [82, 71, 55, 48, 35, 22, 88, 19, 28, 6]
+  },
+  "funnel": [
+    { "label": "門市試躺", "n": 128, "rate": "100%" },
+    { "label": "LINE 綁定",  "n": 80,  "rate": "62.5%" },
+    { "label": "S1 已送達",   "n": 73,  "rate": "91.3%" },
+    { "label": "顧客回覆",    "n": 41,  "rate": "56.2%" },
+    { "label": "成單",       "n": 16,  "rate": "39.0%" }
+  ],
+  "stages": {
+    "labels": ["S0 首問","S1 24h","S2 3d","S3 7d","S4 14d"],
+    "sent":   [80, 73, 62, 45, 28],
+    "replied":[57, 41, 22, 11,  6]
+  },
+  "safety": {
+    "over_5": "0 人（硬限制）",
+    "paused": "3 人",
+    "optout": "2 人",
+    "review_pass": "100%"
+  },
+  "advisors": [
+    { "store": "台北信義", "advisor": "小明", "leads": 28, "bound": 22, "orders": 6, "conv": 21.4, "status": "ok" },
+    { "store": "台中七期", "advisor": "小薇", "leads": 24, "bound": 15, "orders": 4, "conv": 16.7, "status": "ok" },
+    { "store": "板橋",    "advisor": "阿哲", "leads": 31, "bound": 19, "orders": 4, "conv": 12.9, "status": "ok" },
+    { "store": "桃園",    "advisor": "小芬", "leads": 22, "bound": 14, "orders": 2, "conv": 9.1,  "status": "warn" },
+    { "store": "台中七期", "advisor": "Kevin","leads": 23, "bound": 10, "orders": 0, "conv": 0,    "status": "danger" }
+  ],
+  "audit": {
+    "total_7d":   2847,
+    "blocked_7d": 31,
+    "errors_7d":  18,
+    "bytes_7d":   "148 MB",
+    "block_reason": {
+      "labels": ["wms_blacklist","wms_not_in_whitelist","blocked_keyword","shopline_whitelist_miss"],
+      "counts": [14, 9, 5, 3]
+    },
+    "caller_share": {
+      "labels": ["cs-shopline","cs-logistics","unknown"],
+      "counts": [1843, 982, 22]
+    },
+    "caller_daily": {
+      "days":   ["04-09","04-10","04-11","04-12","04-13","04-14","04-15"],
+      "shopline":[242, 268, 275, 231, 289, 305, 233],
+      "logistics":[132, 141, 148, 128, 152, 161, 120],
+      "unknown":[3, 4, 2, 5, 3, 3, 2]
+    }
+  },
+  "alerts": [
+    { "ts":"2026-04-15 13:58", "caller":"cs-logistics", "endpoint":"wms:/api_v1/order/cancel", "status":0,   "size":0,       "reason":"wms_blacklist" },
+    { "ts":"2026-04-15 11:23", "caller":"cs-logistics", "endpoint":"wms:/api_v1/unknown",       "status":0,   "size":0,       "reason":"wms_not_in_whitelist" },
+    { "ts":"2026-04-15 09:14", "caller":"cs-shopline",  "endpoint":"/admin/openapi/v1/orders",  "status":200, "size":1205843, "reason":"response_too_large" },
+    { "ts":"2026-04-14 22:41", "caller":"cs-logistics", "endpoint":"wms:/api_v1/stock/update",  "status":0,   "size":0,       "reason":"blocked_keyword" },
+    { "ts":"2026-04-14 15:05", "caller":"cs-shopline",  "endpoint":"/admin/openapi/v1/orders/999", "status":404, "size":128,  "reason":"not_found" }
+  ]
+}
+</script>
+
+<script>
+(function() {
+  const d = JSON.parse(document.getElementById('dashboard-data').textContent);
+
+  // Header 與模式標記
+  document.getElementById('lastUpdated').textContent = d.last_updated;
+  document.getElementById('dataSource').textContent  = d.source;
+  const badge = document.getElementById('modeBadge');
+  if (d.mode === 'live') { badge.textContent = 'Live 生產環境'; badge.style.background='rgba(228,235,224,.9)'; badge.style.color='#616853'; }
+
+  // ===== KPI =====
+  const k = d.kpi;
+  document.getElementById('kpi-chats').textContent   = k.chats_24h;
+  document.getElementById('kpi-chats-sub').textContent = `AI ${k.chats_ai} · 靜默 ${k.chats_silent}`;
+  document.getElementById('kpi-leads').textContent   = k.leads_total;
+  document.getElementById('kpi-leads-sub').textContent = `7 日新增 ${k.leads_new_7d}`;
+  document.getElementById('kpi-bind').textContent    = k.bind_rate.toFixed(1) + '%';
+  document.getElementById('kpi-conv').textContent    = k.conv_rate.toFixed(1) + '%';
+  document.getElementById('kpi-blocked').textContent = k.blocked_24h;
+  document.getElementById('kpi-human').textContent   = k.human_24h;
+
+  // ===== Chart.js 全域風格 =====
+  Chart.defaults.font.family = '"Noto Sans TC", sans-serif';
+  Chart.defaults.color = '#5B4345';
+  Chart.defaults.borderColor = '#eae6dc';
+
+  const COLORS = {
+    deep:'#616853', light:'#90A086', gold:'#D1B895',
+    brown:'#5B4345', danger:'#C75450', warn:'#D89D3B',
+    palette: ['#616853','#90A086','#D1B895','#5B4345','#A8B598','#758059','#C9B88C','#C75450','#D89D3B','#8A9A7D']
+  };
+
+  // ===== Chart: 每小時呼叫 =====
+  new Chart(document.getElementById('chartHourly'), {
+    type: 'line',
+    data: {
+      labels: d.hourly.labels,
+      datasets: [{
+        label: '呼叫次數',
+        data: d.hourly.calls,
+        borderColor: COLORS.deep,
+        backgroundColor: 'rgba(97,104,83,.12)',
+        fill: true, tension: .4, borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f2efe7' } } }
+    }
+  });
+
+  // ===== Chart: 意圖分佈 =====
+  new Chart(document.getElementById('chartIntent'), {
+    type: 'doughnut',
+    data: {
+      labels: d.intent.labels,
+      datasets: [{ data: d.intent.counts, backgroundColor: COLORS.palette }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } }
+    }
+  });
+
+  // ===== 追客漏斗 =====
+  const fStages = document.getElementById('funnelStages');
+  d.funnel.forEach(s => {
+    fStages.innerHTML += `<div class="funnel-stage">
+      <div class="n">${s.n}</div>
+      <div class="lbl">${s.label}</div>
+      <div class="rate">${s.rate}</div>
+    </div>`;
+  });
+
+  // ===== Chart: 各階段發送 vs 回覆 =====
+  new Chart(document.getElementById('chartStages'), {
+    type: 'bar',
+    data: {
+      labels: d.stages.labels,
+      datasets: [
+        { label: '發送', data: d.stages.sent,    backgroundColor: COLORS.deep },
+        { label: '回覆', data: d.stages.replied, backgroundColor: COLORS.gold }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, grid: { color: '#f2efe7' } } }
+    }
+  });
+
+  // ===== 安全上限 =====
+  document.getElementById('safetyOver5').textContent    = d.safety.over_5;
+  document.getElementById('safetyPaused').textContent   = d.safety.paused;
+  document.getElementById('safetyOptout').textContent   = d.safety.optout;
+  document.getElementById('safetyReview').textContent   = d.safety.review_pass;
+
+  // ===== 輔睡員表格 =====
+  const tbody = document.querySelector('#advisorTable tbody');
+  d.advisors.forEach(a => {
+    const chipClass = a.status === 'ok' ? 'ok' : (a.status === 'warn' ? 'warn' : 'danger');
+    const statusText = a.status === 'ok' ? '正常' : (a.status === 'warn' ? '關注' : '需協助');
+    tbody.innerHTML += `<tr>
+      <td>${a.store}</td>
+      <td>${a.advisor}</td>
+      <td style="text-align:right">${a.leads}</td>
+      <td style="text-align:right">${a.bound}</td>
+      <td style="text-align:right">${a.orders}</td>
+      <td style="text-align:right"><strong>${a.conv}%</strong></td>
+      <td><span class="chip ${chipClass}">${statusText}</span></td>
+    </tr>`;
+  });
+
+  // ===== 審計 KPI =====
+  const au = d.audit;
+  document.getElementById('audit-total').textContent   = au.total_7d;
+  document.getElementById('audit-blocked').textContent = au.blocked_7d;
+  document.getElementById('audit-errors').textContent  = au.errors_7d;
+  document.getElementById('audit-bytes').textContent   = au.bytes_7d;
+
+  // ===== Chart: 攔截原因 =====
+  new Chart(document.getElementById('chartBlockReason'), {
+    type: 'bar',
+    data: {
+      labels: au.block_reason.labels,
+      datasets: [{ data: au.block_reason.counts, backgroundColor: COLORS.palette }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, grid: { color: '#f2efe7' } } }
+    }
+  });
+
+  // ===== Chart: Caller 比例 =====
+  new Chart(document.getElementById('chartCaller'), {
+    type: 'pie',
+    data: {
+      labels: au.caller_share.labels,
+      datasets: [{ data: au.caller_share.counts, backgroundColor: [COLORS.deep, COLORS.light, COLORS.danger] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // ===== Chart: Caller 每日堆疊 =====
+  new Chart(document.getElementById('chartCallerDaily'), {
+    type: 'bar',
+    data: {
+      labels: au.caller_daily.days,
+      datasets: [
+        { label:'cs-shopline',  data: au.caller_daily.shopline,  backgroundColor: COLORS.deep  },
+        { label:'cs-logistics', data: au.caller_daily.logistics, backgroundColor: COLORS.light },
+        { label:'unknown',      data: au.caller_daily.unknown,   backgroundColor: COLORS.danger }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { stacked: true }, y: { stacked: true, grid: { color: '#f2efe7' } } }
+    }
+  });
+
+  // ===== 告警表格 =====
+  const alertBody = document.querySelector('#alertTable tbody');
+  d.alerts.forEach(a => {
+    const chipClass = a.reason.startsWith('wms_') || a.reason === 'blocked_keyword' ? 'danger'
+                    : a.reason === 'response_too_large' ? 'warn' : 'gray';
+    const sizeText = a.size > 1024*1024 ? (a.size/1024/1024).toFixed(1) + ' MB'
+                   : a.size > 1024      ? (a.size/1024).toFixed(1) + ' KB'
+                   : a.size + ' B';
+    alertBody.innerHTML += `<tr>
+      <td>${a.ts}</td>
+      <td>${a.caller}</td>
+      <td><code>${a.endpoint}</code></td>
+      <td style="text-align:right">${a.status}</td>
+      <td style="text-align:right">${sizeText}</td>
+      <td><span class="chip ${chipClass}">${a.reason}</span></td>
+    </tr>`;
+  });
+
+  // ===== Tabs =====
+  document.querySelectorAll('nav.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
