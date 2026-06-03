@@ -121,7 +121,7 @@ async def _call_openai(model: str, messages: list[dict]) -> str:
     """
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            "https://api.openai.com/v1/chat/completions",
+            f"{os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1').rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
             json={
                 "model": model,

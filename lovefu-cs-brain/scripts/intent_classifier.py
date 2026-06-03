@@ -148,10 +148,10 @@ async def classify_intent(message: str) -> str:
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                "https://api.openai.com/v1/chat/completions",
+                f"{os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1').rstrip('/')}/chat/completions",
                 headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
                 json={
-                    "model": "gpt-4o-mini",
+                    "model": os.getenv("LLM_MODEL_SIMPLE", "gpt-4o-mini"),
                     "messages": [
                         {"role": "user", "content": INTENT_PROMPT.format(message=message)}
                     ],
