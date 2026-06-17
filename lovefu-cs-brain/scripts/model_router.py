@@ -126,7 +126,7 @@ async def _call_openai(model: str, messages: list[dict]) -> str:
             json={
                 "model": model,
                 "messages": messages,
-                "max_tokens": 500,
+                "max_tokens": 2500,
                 "temperature": 0.7,
             },
             timeout=30.0,
@@ -179,7 +179,7 @@ async def _call_anthropic(model: str, messages: list[dict]) -> str:
     # Anthropic API format
     request_body = {
         "model": model,
-        "max_tokens": 500,
+        "max_tokens": 2500,
         "messages": non_system_messages,
     }
 
