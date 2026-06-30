@@ -53,48 +53,79 @@ INTENT_TO_KNOWLEDGE = {
 # 產品關鍵字 → 載入對應的 reference
 PRODUCT_KEYWORD_MAP = {
     "products-mattress.md": ["床墊", "山丘", "冰島", "飄雲", "無光", "薄墊", "厚墊", "獨立筒"],
-    "products-pillow.md": ["枕頭", "月眠枕", "月眠", "側睡枕", "雲朵枕", "量脖子"],
-    "products-other.md": ["床架", "懸浮", "沙發", "窩沙發", "棉被", "床包", "寢飾", "竹眠", "保潔墊", "眼罩"],
+    "products-pillow.md": ["枕頭", "月眠枕", "月眠", "側睡枕", "雲朵枕", "量脖子", "墊高片", "側高片", "加購"],
+    "products-other.md": ["床架", "懸浮", "沙發", "窩沙發", "棉被", "涼被", "兩用被", "床包", "寢飾", "竹眠", "保潔墊", "眼罩", "床頭櫃", "洗衣精", "洗被袋"],
+    "products-mattress-custom.md": ["客製", "訂製", "客訂", "特規", "IKEA", "ikea", "Ikea", "MUJI", "muji", "Muji", "尺寸不合", "特殊尺寸"],
 }
+
+# 優惠/活動關鍵字 → 額外載入 current-promotions.md（任何意圖都適用）
+PROMO_KEYWORDS = ["優惠", "活動", "折扣", "促銷", "漲價", "滿額", "折抵", "購物金", "點數", "會員", "入厝", "說明會", "出清", "分期", "方案"]
+
+
+# 單一知識檔最多載入的字數（避免一次塞太多，導致 LLM 請求過大而失敗）
+PER_FILE_CHAR_CAP = 5500
+# 一次最多載入幾個知識檔
+MAX_KNOWLEDGE_FILES = 3
 
 
 def _select_knowledge_files(intent: str, message: str) -> list[str]:
-    """根據意圖和訊息內容，決定載入哪些 knowledge reference 檔。"""
-    files = []
+    """根據意圖和訊息內容，決定載入哪些 knowledge reference 檔。
 
-    # PRODUCT 和 SLEEP 意圖要根據關鍵字細分
-    if intent in ("PRODUCT", "SLEEP"):
-        for filename, keywords in PRODUCT_KEYWORD_MAP.items():
-            if any(kw in message for kw in keywords):
-                files.append(filename)
+    重點：只要訊息「點名了某個產品」，就一定載入該產品的價格檔——
+    不管意圖被分到 PRODUCT、MEMBER、RETURN 還是其他。
+    這樣「山丘加月眠枕一起買有折扣嗎」被分到 MEMBER 時，
+    也會帶著山丘與月眠枕的價格，AI 才算得出滿額折。
 
-        # SLEEP 額外載入 sleep-science
-        if intent == "SLEEP":
-            files.append("sleep-science.md")
+    優先順序：被點名的產品價格檔 > 當期活動（含滿額折邏輯）> 意圖基礎檔。
+    最多 3 個檔，避免請求過大讓 LLM 失敗。
+    """
+    # 1) 不分意圖：訊息提到任一產品 → 該產品價格檔（最優先）
+    product_files = [
+        fn for fn, kws in PRODUCT_KEYWORD_MAP.items()
+        if any(kw in message for kw in kws)
+    ]
 
-        # 沒命中任何關鍵字 → 預設載入床墊（最高頻）
-        if not files:
-            files.append("products-mattress.md")
+    # 2) 含優惠/活動關鍵字 → 當期活動（含滿額折計算邏輯）
+    promo_files = (
+        ["current-promotions.md"]
+        if any(kw in message for kw in PROMO_KEYWORDS) else []
+    )
+
+    # 3) 意圖基礎檔（PRODUCT 靠關鍵字載入，不另加）
+    if intent == "SLEEP":
+        base_files = ["sleep-science.md"]
+    elif intent == "PRODUCT":
+        base_files = []
     else:
-        files = INTENT_TO_KNOWLEDGE.get(intent, [])
+        base_files = list(INTENT_TO_KNOWLEDGE.get(intent, []))
 
-    # 去重，最多 2 個
+    # PRODUCT / SLEEP 沒命中任何產品 → 預設床墊（最高頻）
+    if intent in ("PRODUCT", "SLEEP") and not product_files:
+        product_files = ["products-mattress.md"]
+
+    # 依優先序合併、去重、取前 N 個
     seen = set()
     unique = []
-    for f in files:
+    for f in product_files + promo_files + base_files:
         if f not in seen:
             seen.add(f)
             unique.append(f)
-    return unique[:2]
+    return unique[:MAX_KNOWLEDGE_FILES]
 
 
 def _load_knowledge(filenames: list[str]) -> str:
-    """從 reference 檔案載入知識文字。"""
+    """從 reference 檔案載入知識文字。
+
+    每個檔最多取 PER_FILE_CHAR_CAP 字（價格表與規則都在檔案前段，
+    截掉的是後段敘述），避免一次塞太多讓 LLM 請求過大而失敗。
+    """
     texts = []
     for fn in filenames:
         filepath = KNOWLEDGE_BASE / fn
         if filepath.exists():
             content = filepath.read_text(encoding="utf-8")
+            if len(content) > PER_FILE_CHAR_CAP:
+                content = content[:PER_FILE_CHAR_CAP] + "\n…（其餘細節以官網或轉人工為準）"
             texts.append(content)
         else:
             logger.warning(f"Knowledge file not found: {filepath}")
