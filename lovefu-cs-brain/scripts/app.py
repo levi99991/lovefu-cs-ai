@@ -661,3 +661,66 @@ async def list_missed_handoffs(hours: int = 24):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# ============================================================
+# 測試用聊天頁（/test）— 純新增，不影響 /chat 主流程
+# ============================================================
+from fastapi.responses import HTMLResponse as _HTMLResponse
+
+_TEST_PAGE_HTML = """<!doctype html>
+<html lang='zh-Hant'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>大島樂眠 AI 輔睡員｜測試</title>
+<style>
+body{font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;max-width:640px;margin:0 auto;padding:12px;background:#f4f5f7;color:#222}
+h3{margin:8px 0}
+#log{border:1px solid #e0e0e0;border-radius:12px;height:66vh;overflow-y:auto;padding:12px;background:#fff}
+.u{text-align:right;margin:8px 0}.a{text-align:left;margin:8px 0}
+.u span{background:#06c167;color:#fff;padding:9px 13px;border-radius:14px;display:inline-block;max-width:82%;text-align:left}
+.a span{background:#eceff1;padding:9px 13px;border-radius:14px;display:inline-block;max-width:82%;white-space:pre-wrap}
+#row{display:flex;gap:8px;margin-top:10px}
+#msg{flex:1;padding:11px;border:1px solid #ccc;border-radius:10px;font-size:16px}
+button{padding:11px 18px;border:0;background:#06c167;color:#fff;border-radius:10px;font-size:16px}
+.tip{color:#888;font-size:13px;margin:4px 0 10px}
+</style>
+</head>
+<body>
+<h3>大島樂眠 AI 輔睡員（測試頁）</h3>
+<div class='tip'>直接打字跟小島對話。例如：山丘5尺多少錢、想退貨怎麼辦、板橋店幾點開、山丘加兩顆月眠枕有折扣嗎</div>
+<div id='log'></div>
+<div id='row'>
+<input id='msg' placeholder='輸入訊息後按送出或 Enter' onkeydown='if(event.key===String.fromCharCode(69,110,116,101,114))send()'>
+<button onclick='send()'>送出</button>
+</div>
+<script>
+var uid = 'test-' + Math.random().toString(36).slice(2);
+function add(cls, txt){
+  var log = document.getElementById('log');
+  var d = document.createElement('div'); d.className = cls;
+  var s = document.createElement('span'); s.textContent = txt;
+  d.appendChild(s); log.appendChild(d); log.scrollTop = log.scrollHeight;
+  return s;
+}
+async function send(){
+  var i = document.getElementById('msg');
+  var m = i.value.trim(); if(!m) return;
+  i.value = ''; add('u', m);
+  var s = add('a', '小島思考中...');
+  try{
+    var r = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({line_uid: uid, message: m})});
+    var j = await r.json();
+    s.textContent = j.reply || '(無回覆)';
+  }catch(e){ s.textContent = '連線錯誤：' + e; }
+}
+</script>
+</body>
+</html>"""
+
+
+@app.get("/test", response_class=_HTMLResponse)
+async def _test_page():
+    return _TEST_PAGE_HTML
